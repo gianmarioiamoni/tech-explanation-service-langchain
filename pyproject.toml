@@ -1,0 +1,18 @@
+[project]
+name = "tech-explanation-service"
+version = "0.1.0"
+description = "Portfolio-ready LangChain service for technical explanations"
+requires-python = ">=3.11"
+
+dependencies = [
+  "langchain>=0.2",
+  "langchain-openai>=0.1",
+  "openai>=1.0",
+  "python-dotenv",
+  "fastapi",
+  "uvicorn",
+  "ipykernel"
+]
+
+[tool.setuptools.packages.find]
+where = ["app"]
