@@ -12,8 +12,8 @@ pinned: false
 
 A **production-oriented Python service** that demonstrates how to design, structure, and operationalize **chat-based prompting** and **few-shot techniques** using LangChain and OpenAI models.
 
-This project represents an interactive AI-powered service that explains complex technical topics
-using structured prompting, Few-Shot learning, and LangChain.
+This project represents an interactive AI-powered service that explains complex 
+technical topics using structured prompting, Few-Shot learning, and LangChain.
 
 Built as a portfolio-ready project to demonstrate:
 - Prompt engineering best practices
