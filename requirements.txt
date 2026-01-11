@@ -6,8 +6,8 @@ openai>=1.0,<3.0
 # UI - Gradio 6.x is compatible with latest huggingface_hub
 gradio>=6.0,<7.0
 
-# Hugging Face - latest version
-huggingface_hub>=1.0
+# Hugging Face - compatible with gradio 6.x and transformers
+huggingface_hub>=0.33,<2.0
 
 # API
 fastapi>=0.115,<1.0
