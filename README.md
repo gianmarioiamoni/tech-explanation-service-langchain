@@ -1,10 +1,33 @@
+---
+title: Tech Explanation Service
+emoji: 🤖
+sdk: gradio
+sdk_version: 4.31.0
+app_file: spaces_app.py
+pinned: false
+---
 
 # Tech Explanation Service  
 ### Structured Prompting and Few-Shot Chat Patterns with LangChain
 
 A **production-oriented Python service** that demonstrates how to design, structure, and operationalize **chat-based prompting** and **few-shot techniques** using LangChain and OpenAI models.
 
-This project is intended as a **portfolio-ready GenAI backend component**, not a tutorial or toy example.
+This project represents an interactive AI-powered service that explains complex technical topics
+using structured prompting, Few-Shot learning, and LangChain.
+
+Built as a portfolio-ready project to demonstrate:
+- Prompt engineering best practices
+- Service-oriented LLM design
+- Interactive Gradio-based UI
+
+## Why this project
+
+This project demonstrates how to design an LLM-based application
+with clean separation of concerns, reusable prompt templates,
+and a production-ready deployment model.
+
+It is intentionally built as a service rather than a notebook
+to reflect real-world usage.
 
 ---
 
@@ -107,12 +130,20 @@ This approach provides:
 
 ---
 
-## Environment Setup
+## Environment Setup (local development)
 
 ### 1. Create a Conda Environment
 
 ```bash
 conda create -n tech-explain python=3.11
 conda activate tech-explain
+```
+
+### 2. Install dependences and run the app
+```bash
+pip install -r requirements.txt
+python spaces_app.py
+```
+
 
 
