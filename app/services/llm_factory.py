@@ -14,20 +14,15 @@ load_dotenv()
 
 def get_chat_llm() -> ChatOpenAI:
     """
-    Factory centralizzata per l'LLM chat.
+    Centralized LLM factory for the application.
 
-    Responsabilità:
-    - Istanziare il modello chat OpenAI
-    - Applicare configurazioni standard (model, temperature, ecc.)
-    - Nascondere i dettagli di configurazione al resto dell'applicazione
-
-    Questo approccio rende il servizio:
-    - più testabile
-    - più manutenibile
-    - più facile da estendere (retry, logging, fallback)
+    Responsibilities:
+    - Instantiate the OpenAI chat model
+    - Apply standard configurations (model, temperature, etc.)
+    - Hide the configuration details from the rest of the application
     """
 
-    # Explicit validation: in production it is essential
+    # Explicit validation
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError(
             "OPENAI_API_KEY not found. "
