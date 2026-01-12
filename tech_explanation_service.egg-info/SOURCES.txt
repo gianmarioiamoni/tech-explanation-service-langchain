@@ -1,6 +1,0 @@
-pyproject.toml
-tech_explanation_service.egg-info/PKG-INFO
-tech_explanation_service.egg-info/SOURCES.txt
-tech_explanation_service.egg-info/dependency_links.txt
-tech_explanation_service.egg-info/requires.txt
-tech_explanation_service.egg-info/top_level.txt

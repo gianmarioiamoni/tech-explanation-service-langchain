@@ -1,49 +1,50 @@
 # app/services/tech_explanation_service.py
 #
-# This module defines the TechExplanationService.
-# It is responsible for orchestrating:
-# - the prompt construction
-# - the LLM invocation
-# - returning the generated explanation
+# This service acts as a thin application-layer wrapper around the LCEL chain.
+# Its responsibility is orchestration, not prompt engineering or LLM logic.
 #
-# The service is independent from the API layer and can be reused in
-# notebooks, CLI scripts, or other programs.
+# - It exposes a stable API for UI and HTTP layers
+# - It delegates execution to a pure LCEL chain
+# - It can easily support invoke(), stream(), or batch() in the future
 
-from app.services.llm_factory import get_chat_llm
-from app.prompts.tech_explanation_prompt import build_tech_explanation_prompt
+
+from typing import Dict, Any
+
+from app.chains.tech_explanation_chain import tech_explanation_chain
 
 
 class TechExplanationService:
-    """
-    Service layer to generate technical explanations for a given topic.
-
-    Responsibilities:
-    - Construct the structured prompt
-    - Invoke the LLM chat model
-    - Return the response content
-    """
-
-    def __init__(self):
-        # Initialize the LLM and the prompt template
-        self.llm = get_chat_llm()
-        self.prompt = build_tech_explanation_prompt()
+    # --- Application service for generating technical explanations. ---
+    #
+    # This class intentionally contains no LangChain primitives such as
+    # PromptTemplate or ChatOpenAI. All LLM logic is encapsulated in the LCEL chain.
 
     def explain(self, topic: str) -> str:
-        """
-        Generate a technical explanation for the given topic.
+        # --- Generate a technical explanation for a given topic. ---
+        #
+        # Args:
+        #     topic (str): The technical topic to explain.
+        #
+        # Returns:
+        #     str: The generated explanation.
+        
 
-        Args:
-            topic (str): The topic to explain
+        # Input is passed as a dictionary, as required by LCEL invoke()
+        result: Dict[str, Any] = tech_explanation_chain.invoke(
+            {"topic": topic}
+        )
 
-        Returns:
-            str: The model-generated technical explanation
-        """
-
-        # Format the messages with the user-supplied topic
-        messages = self.prompt.format_messages(topic=topic)
-
-        # Invoke the LLM chat model with the structured messages
-        response = self.llm.invoke(messages)
-
-        # Return the content of the AIMessage
-        return response.content
+        # By convention, LCEL chains return the final LLM output directly
+        # or under a known key. Here we assume a string output.
+        return result
+    
+    def tech_chain_stream(self, topic: str):
+        # --- Stream output of LCEL chain ---
+        #
+        # Args:
+        #     topic (str): The technical topic to explain.
+        #
+        # Returns:
+        #     str: The generated explanation.
+        # LCEL .stream() yields partial outputs
+        return tech_explanation_chain.stream({"topic": topic})
