@@ -29,27 +29,18 @@ def explain_topic_stream(topic: str):
     # LCEL chain returns a generator of partial outputs
     for chunk in service.explain_stream(topic.strip()):
         yield chunk
-
-
 # ------------------------------------------------------------------
-# Gradio interface definition
+# Explain topic with history callback
 # ------------------------------------------------------------------
-# app/ui/gradio_app.py
-#
-# Gradio UI for the Tech Explanation Service.
-# This module defines an interactive web interface that allows users
-# to input a technical topic and receive an AI-generated explanation.
-# The UI delegates all business logic to the TechExplanationService.
+def explain_topic_with_history(topic: str, history):
+    if not topic.strip():
+        return history, "Please enter a technical topic."
 
-import gradio as gr
-from app.services.tech_explanation_service import TechExplanationService
+    explanation = service.explain(topic.strip())
+    history = service.add_to_history(topic.strip(), explanation, history)
 
-
-# ------------------------------------------------------------------
-# Service initialization
-# ------------------------------------------------------------------
-# The service wraps the LCEL chain and exposes a simple application API.
-service = TechExplanationService()
+    formatted_output = "\n\n".join([f"**Topic:** {t}\n{e}" for t, e in history])
+    return history, formatted_output
     
 
 # ------------------------------------------------------------------
@@ -67,6 +58,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         clean separation between UI, service layer, and LLM logic.
         """
     )
+
+    # State for maintaining history
+    history_state = gr.State([])
 
     # Input
     topic_input = gr.Textbox(
@@ -90,16 +84,16 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # ------------------------------------------------------------------
     # Trigger explanation on button click
     explain_button.click(
-        fn=explain_topic_stream,
-        inputs=topic_input,
-        outputs=output_box,
+        fn=explain_topic_with_history,
+        inputs=[topic_input, history_state],
+        outputs=[history_state, output_box],
     )
 
     # Trigger explanation when pressing Enter in the textbox
     topic_input.submit(
-        fn=explain_topic_stream,
-        inputs=topic_input,
-        outputs=output_box,
+        fn=explain_topic_with_history,
+        inputs=[topic_input, history_state],
+        outputs=[history_state, output_box],
     )
 
 
