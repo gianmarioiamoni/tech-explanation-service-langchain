@@ -67,3 +67,5 @@ def test_service_multiple_topics(topic):
 
     assert isinstance(result, str)
     assert len(result.strip()) > 0
+
+
