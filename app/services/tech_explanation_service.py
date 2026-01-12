@@ -13,38 +13,64 @@ from typing import Dict, Any
 from app.chains.tech_explanation_chain import tech_explanation_chain
 
 
+# app/services/tech_explanation_service.py
+#
+# Application service for generating technical explanations.
+#
+# This service acts as the boundary between the UI/API layers and the LCEL chain.
+# It is responsible for:
+# - Invoking the LCEL chain
+# - Handling streaming vs non-streaming execution
+# - Adapting and sanitizing outputs for UI consumption
+
+from typing import Generator
+from app.chains.tech_explanation_chain import tech_explanation_chain
+
+
 class TechExplanationService:
-    # --- Application service for generating technical explanations. ---
-    #
-    # This class intentionally contains no LangChain primitives such as
-    # PromptTemplate or ChatOpenAI. All LLM logic is encapsulated in the LCEL chain.
+    # --- Internal helper methods ---
+
+    def _sanitize_output(self, text: str) -> str:
+        # Remove residual Markdown-like tokens that may confuse the UI.
+        #
+        # Args:
+        #     text (str): Raw text produced by the LLM.
+        #
+        # Returns:
+        #     str: Sanitized text suitable for plain-text UI components.
+        forbidden_tokens = ["##", "# ", "**", "`"]
+        for token in forbidden_tokens:
+            text = text.replace(token, "")
+        return text
+
+    # --- Public service API ---
 
     def explain(self, topic: str) -> str:
-        # --- Generate a technical explanation for a given topic. ---
+        # --- Generate a full (non-streaming) technical explanation. ---
         #
         # Args:
         #     topic (str): The technical topic to explain.
         #
         # Returns:
-        #     str: The generated explanation.
-        
+        #     str: The sanitized explanation text.
 
-        # Input is passed as a dictionary, as required by LCEL invoke()
-        result: Dict[str, Any] = tech_explanation_chain.invoke(
-            {"topic": topic}
-        )
+        result = tech_explanation_chain.invoke({"topic": topic})
 
-        # By convention, LCEL chains return the final LLM output directly
-        # or under a known key. Here we assume a string output.
-        return result
-    
-    def tech_chain_stream(self, topic: str):
-        # --- Stream output of LCEL chain ---
+        # The chain is expected to return a string output
+        return self._sanitize_output(result)
+
+    def explain_stream(self, topic: str) -> Generator[str, None, None]:
+        # --- Stream a technical explanation incrementally. ---
         #
         # Args:
         #     topic (str): The technical topic to explain.
         #
-        # Returns:
-        #     str: The generated explanation.
-        # LCEL .stream() yields partial outputs
-        return tech_explanation_chain.stream({"topic": topic})
+        # Yields:
+        #     str: The progressively accumulated, sanitized explanation.
+
+        accumulated = ""
+
+        # LCEL .stream() yields partial chunks of model output
+        for chunk in tech_explanation_chain.stream({"topic": topic}):
+            accumulated += self._sanitize_output(chunk)
+            yield accumulated

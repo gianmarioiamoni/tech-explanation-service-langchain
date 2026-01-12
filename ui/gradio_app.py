@@ -27,27 +27,8 @@ def explain_topic_stream(topic: str):
         return
 
     # LCEL chain returns a generator of partial outputs
-    for chunk in service.tech_chain_stream(topic.strip()):
+    for chunk in service.explain_stream(topic.strip()):
         yield chunk
-
-
-# ------------------------------------------------------------------
-# UI callback
-# ------------------------------------------------------------------
-def explain_topic(topic: str) -> str:
-    
-    # --- Gradio callback function. ---
-    #
-    # Args:
-    #     topic (str): The technical topic provided by the user.
-    #
-    # Returns:
-    #     str: The generated explanation.
-
-    if not topic or not topic.strip():
-        return "Please enter a technical topic."
-
-    return service.explain(topic.strip())
 
 
 # ------------------------------------------------------------------
@@ -69,28 +50,6 @@ from app.services.tech_explanation_service import TechExplanationService
 # ------------------------------------------------------------------
 # The service wraps the LCEL chain and exposes a simple application API.
 service = TechExplanationService()
-
-
-# ------------------------------------------------------------------
-# UI callback
-# ------------------------------------------------------------------
-def explain_topic_stream(topic: str) -> str:
-    
-    # --- Gradio callback function. ---
-    #
-    # Args:
-    #     topic (str): The technical topic provided by the user.
-    #
-    # Yields:
-    #     str: The generated explanation.
-
-    if not topic or not topic.strip():
-        yield "Please enter a technical topic."
-        return
-
-    # LCEL chain returns a generator of partial outputs
-    for chunk in service.tech_chain_stream(topic.strip()):
-        yield chunk
     
 
 # ------------------------------------------------------------------
