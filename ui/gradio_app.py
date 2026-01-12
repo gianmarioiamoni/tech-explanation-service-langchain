@@ -62,22 +62,23 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # State for maintaining history
     history_state = gr.State([])
 
-    # Input
-    topic_input = gr.Textbox(
-        label="Technical Topic",
-        placeholder="e.g. Docker",
-        lines=1,
-    )
+    with gr.Column():
+        # Input
+        topic_input = gr.Textbox(
+            label="Enter technical topic",
+            placeholder="Type a topic... e.g. Docker",
+            lines=1,
+        )
 
-    # Chat-like output box
-    output_box = gr.Textbox(
-        label="Explanation",
-        lines=15,
-        max_lines=None,
-        interactive=False,
-    )
+        # Chat-like output box
+        output_box = gr.Textbox(
+            label="Explanation",
+            lines=15,
+            max_lines=None,
+            interactive=False,
+        )
     
-    explain_button = gr.Button("Explain")
+        explain_button = gr.Button("Explain")
 
     # ------------------------------------------------------------------
     # Events
