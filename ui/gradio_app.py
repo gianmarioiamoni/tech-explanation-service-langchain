@@ -109,19 +109,25 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         """
     )
 
-    with gr.Column():
-        topic_input = gr.Textbox(
-            label="Technical Topic",
-            placeholder="e.g. Transformer architecture in NLP",
-            lines=1,
-        )
+    # Input
+    topic_input = gr.Textbox(
+        label="Technical Topic",
+        placeholder="e.g. Docker",
+        lines=1,
+    )
 
-        explain_button = gr.Button(
-            "Explain",
-            size="sm",
-        )
+    # Chat-like output box
+    output_box = gr.Textbox(
+        label="Explanation",
+        lines=12,
+        max_lines=None,
+        interactive=False,
+    )
 
-        output = gr.Markdown(label="Explanation")
+    # Button with natural width
+    with gr.Row():
+        with gr.Column(scale=0):
+            explain_button = gr.Button("Explain")
 
     # ------------------------------------------------------------------
     # Events
@@ -130,30 +136,14 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     explain_button.click(
         fn=explain_topic_stream,
         inputs=topic_input,
-        outputs=output,
+        outputs=output_box,
     )
 
     # Trigger explanation when pressing Enter in the textbox
     topic_input.submit(
         fn=explain_topic_stream,
         inputs=topic_input,
-        outputs=output,
+        outputs=output_box,
     )
 
 
-    # ------------------------------------------------------------------
-    # Events
-    # ------------------------------------------------------------------
-    # Trigger explanation on button click
-    explain_button.click(
-        fn=explain_topic,
-        inputs=topic_input,
-        outputs=output,
-    )
-
-    # Trigger explanation when pressing Enter in the textbox
-    topic_input.submit(
-        fn=explain_topic,
-        inputs=topic_input,
-        outputs=output,
-    )
