@@ -26,48 +26,54 @@ from app.chains.tech_explanation_chain import tech_explanation_chain
 from typing import Generator
 from app.chains.tech_explanation_chain import tech_explanation_chain
 
+import re
 
 class TechExplanationService:
     # --- Internal helper methods ---
 
     def _sanitize_output(self, text: str) -> str:
-        # Remove residual Markdown-like tokens that may confuse the UI.
+        # Clean text output for UI
         #
-        # Args:
-        #     text (str): Raw text produced by the LLM.
+        # This method:
+        # - Removes Markdown headers (#, ##)
+        # - Strips bold/italic formatting while preserving emoji and symbols
+        # - Leaves emoji like 🔴, 🟠, 🟢 intact
+        # - Strips extra whitespace
         #
-        # Returns:
-        #     str: Sanitized text suitable for plain-text UI components.
-        forbidden_tokens = ["##", "# ", "**", "`"]
-        for token in forbidden_tokens:
-            text = text.replace(token, "")
-        return text
+   
 
-    # --- Public service API ---
+        # Remove Markdown headers (e.g., # Heading)
+        text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE).strip()
+
+        # Remove bold (**text**) or italic (*text*) but keep inner content
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text).strip()
+        text = re.sub(r"\*(.*?)\*", r"\1", text).strip()
+
+        # Remove inline code ticks (`text`)
+        text = re.sub(r"`(.*?)`", r"\1", text).strip()
+
+        # Remove excessive leading/trailing whitespace
+        return text.strip()
+
+
 
     def explain(self, topic: str) -> str:
-        # --- Generate a full (non-streaming) technical explanation. ---
-        #
+        # Generate a full (non-streaming) technical explanation.
         # Args:
         #     topic (str): The technical topic to explain.
-        #
         # Returns:
         #     str: The sanitized explanation text.
-
         result = tech_explanation_chain.invoke({"topic": topic})
 
         # The chain is expected to return a string output
         return self._sanitize_output(result)
 
     def explain_stream(self, topic: str) -> Generator[str, None, None]:
-        # --- Stream a technical explanation incrementally. ---
-        #
+        # Stream a technical explanation incrementally.
         # Args:
         #     topic (str): The technical topic to explain.
-        #
         # Yields:
-        #     str: The progressively accumulated, sanitized explanation.
-
+        #     str: The progressively accumulated, sanitized explanation
         accumulated = ""
 
         # LCEL .stream() yields partial chunks of model output

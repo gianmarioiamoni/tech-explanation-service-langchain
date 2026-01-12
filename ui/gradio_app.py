@@ -78,15 +78,12 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # Chat-like output box
     output_box = gr.Textbox(
         label="Explanation",
-        lines=12,
+        lines=15,
         max_lines=None,
         interactive=False,
     )
-
-    # Button with natural width
-    with gr.Row():
-        with gr.Column(scale=0):
-            explain_button = gr.Button("Explain")
+    
+    explain_button = gr.Button("Explain")
 
     # ------------------------------------------------------------------
     # Events

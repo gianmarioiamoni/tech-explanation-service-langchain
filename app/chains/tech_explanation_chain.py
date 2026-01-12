@@ -48,7 +48,10 @@ prompt = ChatPromptTemplate.from_messages(
             "- Use section titles as plain text followed by a colon.\n"
             "- Use short paragraphs.\n"
             "- Use simple bullet points starting with '•'.\n"
-            "- You may use semantic emojis (🔴 🟠 🟢 🔵) where appropriate.\n"
+            "- Use semantic emojis (🔴 🟠 🟢) when appropriate. For example, when explaining a concept, use a 🔴 emoji to indicate a critical point, a 🟠 emoji to indicate a important point, a 🟢 emoji to indicate a positive point\n"
+            "- Don't exceed in semantic emojis usage. Use them only when appropriate. If you don't have a semantic emoji to use, use a plain text instead.\n"
+            "- Don't use more than 3 semantic emojis in a single explanation. If you need to use more than 3, use a plain text instead.\n"
+            "- Try to use at least 1 semantic emoji in a single explanation. \n"
         ),
         (
             "human",
