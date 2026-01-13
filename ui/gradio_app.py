@@ -5,7 +5,6 @@ from app.services.tech_explanation_service import TechExplanationService
 # Inizializzazione servizio
 # -------------------------------
 service = TechExplanationService()
-loaded_history = service.load_history()
 
 # -------------------------------
 # Callback streaming
@@ -43,6 +42,20 @@ def explain_topic_stream(topic: str, history):
 
 
 # -------------------------------
+# Caricamento iniziale history
+# -------------------------------
+def initialize_history():
+    """Carica l'history da HF Hub quando la pagina viene aperta"""
+    print("\n🔄 Inizializzazione nuova sessione...")
+    fresh_history = service.load_history()
+    topics = [t for t, _ in fresh_history]
+    print(f"   📚 History caricata: {len(fresh_history)} items")
+    print(f"   Topics: {topics}")
+    
+    # Ritorna: history_state, dropdown_update
+    return fresh_history, gr.update(choices=topics)
+
+# -------------------------------
 # Callback chat precedente
 # -------------------------------
 def load_previous_chat(selected_topic, history):
@@ -67,7 +80,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         "# Tech Explanation Service\nInserisci un topic tecnico e ricevi una spiegazione chiara e strutturata."
     )
 
-    history_state = gr.State(loaded_history)
+    # State inizializzato vuoto, verrà caricato all'apertura della pagina
+    history_state = gr.State([])
 
     with gr.Row():
         with gr.Column(scale=2):
@@ -93,7 +107,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         with gr.Column(scale=1):
             history_dropdown = gr.Dropdown(
                 label="Previous chats",
-                choices=[t for t, _ in loaded_history],  # Choices iniziali
+                choices=[],  # Vuoto inizialmente, sarà popolato al load
                 value=None,
                 interactive=True,
             )
@@ -117,6 +131,15 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         fn=explain_topic_stream,
         inputs=[topic_input, history_state],
         outputs=[history_state, output_box, history_dropdown],
+    )
+
+    # -------------------------------
+    # Caricamento iniziale al load della pagina
+    # -------------------------------
+    demo.load(
+        fn=initialize_history,
+        inputs=None,
+        outputs=[history_state, history_dropdown],
     )
 
 if __name__ == "__main__":
