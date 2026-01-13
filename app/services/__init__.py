@@ -6,13 +6,13 @@
 # - explanation/: LLM explanation generation and output formatting
 # - history/: Chat history persistence, querying, and formatting
 #
-# For backward compatibility, TechExplanationService facade is provided.
-# For new code, prefer using domain services directly.
+# Domain-Driven Design architecture:
+# Use specific services based on your needs instead of a monolithic service.
 
-from app.services.tech_explanation_service_facade import TechExplanationService
-
-# Domain services (for direct use in new code)
+# Explanation domain
 from app.services.explanation import ExplanationService, OutputFormatter
+
+# History domain
 from app.services.history import (
     HistoryRepository,
     HistoryQueryService,
@@ -21,8 +21,6 @@ from app.services.history import (
 )
 
 __all__ = [
-    # Facade (backward compatibility)
-    "TechExplanationService",
     # Explanation domain
     "ExplanationService",
     "OutputFormatter",

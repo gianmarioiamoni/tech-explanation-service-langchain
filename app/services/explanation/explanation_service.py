@@ -12,21 +12,26 @@ from app.services.explanation.output_formatter import OutputFormatter
 
 
 class ExplanationService:
-    """Service for generating technical explanations using LLM"""
+    # Service for generating technical explanations using LLM
+    #
+    # Args:
+    #     None
+    #
+    # Returns:
+    #     None
     
     def __init__(self):
         self.formatter = OutputFormatter()
     
     def explain_stream(self, topic: str) -> Generator[str, None, None]:
-        """
-        Generate LLM output chunk by chunk for a single topic.
+        # Generate LLM output chunk by chunk for a single topic.
+        #
+        # Args:
+        #     topic: Technical topic to explain
+        #
+        # Yields:
+        #     Accumulated text chunks (not sanitized during streaming)
         
-        Args:
-            topic: Technical topic to explain
-            
-        Yields:
-            Accumulated text chunks (not sanitized during streaming)
-        """
         accumulated = ""
         for chunk in tech_explanation_chain.stream({"topic": topic}):
             accumulated += chunk
@@ -36,16 +41,14 @@ class ExplanationService:
     def explain_multiple_stream(
         self, raw_topics: str
     ) -> Generator[Tuple[str, str], None, None]:
-        """
-        Stream explanations for multiple topics sequentially.
-        Yields (topic_name, accumulated_text) for each chunk.
+        # Stream explanations for multiple topics sequentially.
+        #
+        # Args:
+        #     raw_topics: Comma-separated list of topics
+        #
+        # Yields:
+        #     Tuple of (topic_name, accumulated_explanation_text)
         
-        Args:
-            raw_topics: Comma-separated list of topics
-            
-        Yields:
-            Tuple of (topic_name, accumulated_explanation_text)
-        """
         topics = self.formatter.parse_topics(raw_topics)
 
         for topic in topics:

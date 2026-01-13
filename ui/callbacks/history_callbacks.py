@@ -8,11 +8,17 @@
 # - Delete chat from history
 
 import gradio as gr
-from app.services.tech_explanation_service import TechExplanationService
+from app.services.history import (
+    HistoryRepository,
+    HistoryFormatter,
+    HistoryLoader,
+)
 from ui.utils.ui_messages import get_history_info_message
 
-# Service instance
-service = TechExplanationService()
+# Domain service instances
+history_repository = HistoryRepository()
+history_formatter = HistoryFormatter()
+history_loader = HistoryLoader()
 
 
 def initialize_history():
@@ -27,11 +33,11 @@ def initialize_history():
     # Returns:
     #     Tuple of (history, history_dropdown_update, delete_dropdown_update, search_box_clear)
     print("\n🔄 Initialization of new session...")
-    fresh_history = service.load_history()
+    fresh_history = history_repository.load_history()
     print(f"   📚 History loaded: {len(fresh_history)} items")
     
-    radio_choices, radio_value = service.create_history_choices(fresh_history)
-    delete_choices = service.create_delete_choices(fresh_history)
+    radio_choices, radio_value = history_formatter.create_history_choices(fresh_history)
+    delete_choices = history_formatter.create_delete_choices(fresh_history)
     
     # Dynamic info message
     info_msg = get_history_info_message(len(fresh_history))
@@ -55,25 +61,25 @@ def load_selected_chat(selection, history):
         date_str = selection.replace("📅", "").strip()
         print(f"📅 Data selezionata: '{date_str}' - caricamento chat del giorno...")
         
-        chats = service.get_chats_by_date(date_str, history)
+        chats = history_loader.get_chats_by_date(date_str, history)
         
         if chats:
             print(f"   Trovate {len(chats)} chat per {date_str}")
-            combined_topic, combined_output = service.format_chats_for_date(date_str, chats)
+            combined_topic, combined_output = history_loader.format_chats_for_date(date_str, chats)
             return combined_topic, combined_output
         
         print(f"⚠️ Nessuna chat trovata per la data: '{date_str}'")
         return gr.update(), gr.update()
     
     # CASE 2: It's a single chat
-    topic_display = service.parse_topic_from_selection(selection)
+    topic_display = HistoryFormatter.parse_topic_from_selection(selection)
     
     if not topic_display:
         print(f"⚠️ Selezione non valida: '{selection}'")
         return gr.update(), gr.update()
     
     # Find chat in history
-    result = service.find_chat_by_topic(topic_display, history)
+    result = history_loader.find_chat_by_topic(topic_display, history)
     
     if result:
         topic, explanation = result
@@ -106,11 +112,11 @@ def delete_selected_chat(delete_selection, history, search_query):
             topic = history[idx][0]
             print(f"🗑️ Eliminazione chat {idx}: {topic}")
             
-            new_history = service.delete_from_history(idx, history)
+            new_history = history_repository.delete_from_history(idx, history)
             
             # Components update
-            radio_choices, radio_value = service.create_history_choices(new_history)
-            delete_choices = service.create_delete_choices(new_history)
+            radio_choices, radio_value = history_formatter.create_history_choices(new_history)
+            delete_choices = history_formatter.create_delete_choices(new_history)
             
             # Info message
             info_msg = get_history_info_message(len(new_history))

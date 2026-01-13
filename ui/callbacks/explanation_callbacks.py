@@ -8,11 +8,15 @@
 # - Update history after explanation
 
 import gradio as gr
-from app.services.tech_explanation_service import TechExplanationService
+from app.services.explanation import ExplanationService, OutputFormatter
+from app.services.history import HistoryRepository, HistoryFormatter
 from ui.utils.ui_messages import get_history_info_message
 
-# Service instance
-service = TechExplanationService()
+# Domain service instances
+explanation_service = ExplanationService()
+output_formatter = OutputFormatter()
+history_repository = HistoryRepository()
+history_formatter = HistoryFormatter()
 
 
 def explain_topic_stream(topic: str, history, history_mode: str):
@@ -35,18 +39,18 @@ def explain_topic_stream(topic: str, history, history_mode: str):
     print(f"🚀 Multi-topic request: '{topic_clean}'")
 
     # Parse topics to maintain order
-    topics = service.parse_topics(topic_clean)
+    topics = output_formatter.parse_topics(topic_clean)
     topic_contents = {}  # Dictionary to track accumulated content per topic
     aggregate_mode = history_mode == "Aggregate into one chat"
 
-    for topic_name, accumulated_text in service.explain_multiple_stream(topic_clean):
+    for topic_name, accumulated_text in explanation_service.explain_multiple_stream(topic_clean):
         # Note: accumulated_text is already the FULL text for this topic (not incremental)
         # Store the latest accumulated text for this topic
         topic_contents[topic_name] = accumulated_text
 
         if aggregate_mode:
             # Aggregate mode: use service method to combine topics
-            accumulated_raw = service.aggregate_topics_output(topics, topic_contents)
+            accumulated_raw = output_formatter.aggregate_topics_output(topics, topic_contents)
         else:
             # Separate mode: show only current topic
             accumulated_raw = f"{topic_name}:\n\n{accumulated_text}"
@@ -54,18 +58,18 @@ def explain_topic_stream(topic: str, history, history_mode: str):
         yield history, accumulated_raw, gr.update(), gr.update()
 
     # Final sanitization
-    final_text = service._sanitize_output(accumulated_raw)
+    final_text = output_formatter.sanitize_output(accumulated_raw)
 
     if history_mode == "Aggregate into one chat":
         # Single aggregated chat
-        history = service.add_to_history(topic_clean, final_text, history)
+        history = history_repository.add_to_history(topic_clean, final_text, history)
     else:
         # One chat per topic (current behavior)
         for t in topics:
-            history = service.add_to_history(t, final_text, history)
+            history = history_repository.add_to_history(t, final_text, history)
 
-    radio_choices, _ = service.create_history_choices(history)
-    delete_choices = service.create_delete_choices(history)
+    radio_choices, _ = history_formatter.create_history_choices(history)
+    delete_choices = history_formatter.create_delete_choices(history)
 
     info_msg = get_history_info_message(len(history))
 
