@@ -25,14 +25,50 @@ class TechExplanationService:
     # -------------------------------
     def _sanitize_output(self, text: str) -> str:
         """Rimuove Markdown e formatting indesiderato, preserva emoji e simboli"""
+        # Rimuove Markdown headers
         text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE)
+        # Rimuove bold e italic
         text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
         text = re.sub(r"\*(.*?)\*", r"\1", text)
+        # Rimuove inline code
         text = re.sub(r"`(.*?)`", r"\1", text)
 
-        # aggiunge un '\n\n' tra frasi (assumendo che ogni frase termini con punto)
-        sentences = [s.strip() for s in text.split(".") if s.strip()]
-        return "\n\n".join([s + "." for s in sentences])
+        # Protegge abbreviazioni comuni sostituendo temporaneamente i loro punti
+        abbrev_mappings = {
+            'e.g.': '<EG>',
+            'i.e.': '<IE>',
+            'etc.': '<ETC>',
+            'vs.': '<VS>',
+            'cf.': '<CF>',
+            'Dr.': '<DR>',
+            'Mr.': '<MR>',
+            'Mrs.': '<MRS>',
+            'Ms.': '<MS>',
+            'Prof.': '<PROF>',
+        }
+        
+        # Sostituisce abbreviazioni con placeholder (case insensitive)
+        for abbrev, placeholder in abbrev_mappings.items():
+            text = re.sub(re.escape(abbrev), placeholder, text, flags=re.IGNORECASE)
+        
+        # Split su punti seguiti da spazio e maiuscola/emoji/bullet (fine frase vera)
+        sentences = re.split(r'\.\s+(?=[A-Z0-9🔴🟠🟢•\-])', text)
+        
+        # Ripristina le abbreviazioni
+        for abbrev, placeholder in abbrev_mappings.items():
+            sentences = [s.replace(placeholder, abbrev) for s in sentences]
+        
+        # Pulisci e unisci con doppio newline
+        cleaned_sentences = []
+        for s in sentences:
+            s = s.strip()
+            if s:
+                # Aggiungi il punto finale se manca
+                if not s.endswith('.') and not s.endswith('!') and not s.endswith('?'):
+                    s += '.'
+                cleaned_sentences.append(s)
+        
+        return "\n\n".join(cleaned_sentences)
 
     # -------------------------------
     # Streaming spiegazioni
