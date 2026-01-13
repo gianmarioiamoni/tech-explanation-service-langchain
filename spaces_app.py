@@ -12,6 +12,9 @@
 
 from ui.gradio_app import demo
 
+# Enable queue for streaming and cancels functionality
+demo.queue()
+
 # Hugging Face Spaces expects a variable named "demo"
 # or a call to demo.launch()
 if __name__ == "__main__":

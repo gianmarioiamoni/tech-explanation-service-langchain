@@ -71,7 +71,6 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 lines=18,
                 interactive=False,
                 autoscroll=True,
-                show_copy_button=True,
             )
 
             with gr.Row():
@@ -204,4 +203,5 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
 
 
 if __name__ == "__main__":
+    demo.queue()  # Required for streaming and cancels functionality
     demo.launch()
