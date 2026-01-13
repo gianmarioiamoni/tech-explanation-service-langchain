@@ -3,10 +3,11 @@
 # Service for technical explanations with persistent history on HF Hub
 # Handle streaming, sanitization of output and reading/saving history.
 
-from typing import Generator
+from typing import Generator, List, Tuple, Optional
 import re
 import json
 import os
+from datetime import datetime
 from huggingface_hub import HfApi, hf_hub_download
 from app.chains.tech_explanation_chain import tech_explanation_chain
 
@@ -146,9 +147,73 @@ class TechExplanationService:
             return False
     
     def add_to_history(self, topic: str, explanation: str, history):
-        """Aggiunge una nuova interazione e persiste su HF Hub"""
-        new_history = history + [(topic, explanation)]
+        """Aggiunge una nuova interazione con timestamp e persiste su HF Hub"""
+        timestamp = datetime.now().isoformat()
+        # Supporta sia vecchio formato (topic, explanation) che nuovo (topic, explanation, timestamp)
+        new_entry = (topic, explanation, timestamp)
+        new_history = history + [new_entry]
         success = self.save_history(new_history)
         if not success:
             print("⚠️ History non salvata su HF Hub, ma disponibile nella sessione")
         return new_history
+    
+    def delete_from_history(self, index: int, history) -> List:
+        """Rimuove una chat dall'history per indice"""
+        if 0 <= index < len(history):
+            new_history = history[:index] + history[index+1:]
+            self.save_history(new_history)
+            print(f"🗑️ Chat {index} rimossa dall'history")
+            return new_history
+        print(f"⚠️ Indice {index} non valido")
+        return history
+    
+    def search_history(self, query: str, history) -> List[Tuple]:
+        """Cerca nelle chat per query (case-insensitive)"""
+        if not query.strip():
+            return history
+        
+        query_lower = query.strip().lower()
+        results = []
+        for item in history:
+            topic = item[0]
+            explanation = item[1]
+            # Cerca in topic o explanation
+            if query_lower in topic.lower() or query_lower in explanation.lower():
+                results.append(item)
+        
+        print(f"🔍 Trovate {len(results)} chat per query '{query}'")
+        return results
+    
+    def group_by_date(self, history) -> dict:
+        """Raggruppa le chat per giorno"""
+        from collections import defaultdict
+        
+        grouped = defaultdict(list)
+        for item in history:
+            # Supporta sia vecchio formato (2 elementi) che nuovo (3 elementi)
+            if len(item) == 3:
+                topic, explanation, timestamp = item
+            else:
+                # Vecchio formato senza timestamp
+                topic, explanation = item
+                timestamp = datetime.now().isoformat()
+            
+            # Estrai la data (senza ora)
+            try:
+                dt = datetime.fromisoformat(timestamp)
+                date_key = dt.strftime("%Y-%m-%d")
+                date_label = dt.strftime("%d/%m/%Y")
+            except:
+                date_key = "unknown"
+                date_label = "Data sconosciuta"
+            
+            grouped[date_key].append({
+                "topic": topic,
+                "explanation": explanation,
+                "timestamp": timestamp,
+                "date_label": date_label
+            })
+        
+        # Ordina per data (più recente prima)
+        sorted_grouped = dict(sorted(grouped.items(), reverse=True))
+        return sorted_grouped
