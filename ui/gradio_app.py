@@ -91,8 +91,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                     scale=1,
                 )
             
-            # Download format submenu (expands when Download is clicked)
-            with gr.Accordion("📥 Select Format", open=False, visible=True) as download_accordion:
+            # Download format submenu (appears when Download is clicked)
+            with gr.Accordion("📥 Select Format", open=True, visible=False) as download_accordion:
                 with gr.Row():
                     download_md_btn = gr.Button(
                         "📄 Markdown",
@@ -227,9 +227,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         cancels=[click_stream, submit_stream],
     )
     
-    # Download button opens format submenu
+    # Download button shows format submenu
     download_btn.click(
-        fn=lambda: (gr.update(open=True), gr.update(visible=False, value=None)),
+        fn=lambda: (gr.update(visible=True, open=True), gr.update(visible=False, value=None)),
         inputs=None,
         outputs=[download_accordion, download_file],
     )
@@ -240,7 +240,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[topic_input, output_box],
         outputs=[download_file],
     ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
         inputs=[download_file],
         outputs=[download_file, download_accordion],
     )
@@ -250,7 +250,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[topic_input, output_box],
         outputs=[download_file],
     ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
         inputs=[download_file],
         outputs=[download_file, download_accordion],
     )
@@ -260,14 +260,14 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[topic_input, output_box],
         outputs=[download_file],
     ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
         inputs=[download_file],
         outputs=[download_file, download_accordion],
     )
     
-    # Clear (also disable download, close accordion and hide file)
+    # Clear (also disable download, hide accordion and file)
     clear_button.click(
-        fn=lambda: ("", "", gr.update(interactive=False), gr.update(open=False), gr.update(visible=False, value=None)),
+        fn=lambda: ("", "", gr.update(interactive=False), gr.update(visible=False, open=True), gr.update(visible=False, value=None)),
         inputs=None,
         outputs=[topic_input, output_box, download_btn, download_accordion, download_file],
     )
