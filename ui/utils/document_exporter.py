@@ -73,23 +73,28 @@ class DocumentExporter:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"tech_explanation_{timestamp}.pdf"
         
-        # Create PDF
+        # Create PDF with Unicode support
         pdf = FPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
         
+        # Add Unicode font (DejaVu Sans is built-in fpdf2)
+        pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+        pdf.add_font("DejaVu", "B", "DejaVuSans-Bold.ttf", uni=True)
+        pdf.add_font("DejaVu", "I", "DejaVuSans-Oblique.ttf", uni=True)
+        
         # Title
-        pdf.set_font("Helvetica", "B", 16)
+        pdf.set_font("DejaVu", "B", 16)
         pdf.cell(0, 10, topic, ln=True, align='C')
         pdf.ln(5)
         
         # Timestamp
-        pdf.set_font("Helvetica", "I", 10)
+        pdf.set_font("DejaVu", "I", 10)
         pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align='C')
         pdf.ln(5)
         
         # Content
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font("DejaVu", "", 11)
         
         # Split content by lines and add to PDF
         for line in content.split('\n'):
