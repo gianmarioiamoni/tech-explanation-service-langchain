@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
 
 # Load environment variables (e.g. OPENAI_API_KEY)
 load_dotenv()
@@ -23,9 +23,11 @@ load_dotenv()
 # LLM configuration
 # ------------------------------------------------------------------
 # ChatOpenAI is itself a Runnable and can be piped in LCEL.
+# streaming=True enables progressive token generation for real-time output
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0.2,
+    streaming=True,
 )
 
 
@@ -64,9 +66,9 @@ prompt = ChatPromptTemplate.from_messages(
 # ------------------------------------------------------------------
 # Output parser
 # ------------------------------------------------------------------
-# The LLM returns an AIMessage object.
-# This RunnableLambda extracts the plain text content.
-output_parser = RunnableLambda(lambda message: message.content)
+# StrOutputParser is optimized for streaming and extracts text content
+# from AIMessage/AIMessageChunk objects efficiently
+output_parser = StrOutputParser()
 
 
 # ------------------------------------------------------------------

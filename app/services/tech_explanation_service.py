@@ -70,12 +70,13 @@ class TechExplanationService:
         # Args:
         #     topic (str): The technical topic to explain.
         # Yields:
-        #     str: The progressively accumulated, sanitized explanation
+        #     str: The progressively accumulated explanation
         accumulated = ""
 
         # LCEL .stream() yields partial chunks of model output
         for chunk in tech_explanation_chain.stream({"topic": topic}):
-            accumulated += self._sanitize_output(chunk)
+            # Don't sanitize during streaming - just accumulate raw chunks
+            accumulated += chunk
             yield accumulated
 
     
