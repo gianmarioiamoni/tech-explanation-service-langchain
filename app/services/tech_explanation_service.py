@@ -10,6 +10,8 @@ import os
 from datetime import datetime
 from huggingface_hub import HfApi, hf_hub_download
 from app.chains.tech_explanation_chain import tech_explanation_chain
+from langchain_core.runnables import RunnableParallel
+
 
 class TechExplanationService:
     HF_USERNAME = "gianmarioiamoni67"
@@ -194,3 +196,28 @@ class TechExplanationService:
         # Ordina per data (più recente prima)
         sorted_grouped = dict(sorted(grouped.items(), reverse=True))
         return sorted_grouped
+
+    # -------------------------------
+    # Multi-topic parsing
+    # -------------------------------
+    def parse_topics(self, raw_input: str) -> List[str]:
+        # Split comma-separated topics and clean them
+        topics = [t.strip() for t in raw_input.split(",")]
+        return [t for t in topics if t]
+
+    # -------------------------------
+    # Multi-topic streaming (sequential UX)
+    # -------------------------------
+    def explain_multiple_stream(
+        self, raw_topics: str
+    ) -> Generator[Tuple[str, str], None, None]:
+        # Streams explanations for multiple topics sequentially.
+        # Yields (topic, accumulated_text).
+        topics = self.parse_topics(raw_topics)
+
+        for topic in topics:
+            accumulated = ""
+            for chunk in tech_explanation_chain.stream({"topic": topic}):
+                accumulated += chunk
+                yield topic, accumulated
+

@@ -1,7 +1,18 @@
+# ui/gradio_app.py
+#
+# Gradio UI for the Tech Explanation Service
+# Streaming + Persistent History + Dropdown + Primary Button
+#
+# Responsibilities:
+# - Provide a web interface for the Tech Explanation Service
+# - Handle streaming of the output
+# - Handle the history of the chats
+# - Handle the dropdown of the previous chats
+# - Handle the primary button to explain the topic
 import sys
 from pathlib import Path
 
-# Aggiungi project root al path per permettere import di 'app'
+# Add project root to path to allow import of 'app'
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -21,59 +32,61 @@ service = TechExplanationService()
 def explain_topic_stream(topic: str, history):
     topic_clean = (topic or "").strip()
     if not topic_clean:
-        yield history, "Please enter a technical topic.", gr.update(), gr.update()
+        yield history, "Please enter at least one technical topic.", gr.update(), gr.update()
         return
 
     print(f"\n{'='*60}")
-    print(f"🚀 Nuova richiesta: '{topic_clean}'")
-    print(f"   History corrente: {len(history)} items")
+    print(f"🚀 Multi-topic request: '{topic_clean}'")
 
-    # Accumula i chunk RAW dallo streaming
+    current_topic = None
     accumulated_raw = ""
-    for chunk in service.explain_stream(topic_clean):
-        accumulated_raw = chunk
+
+    for topic_name, chunk in service.explain_multiple_stream(topic_clean):
+        # New topic detected → reset buffer and show header
+        if topic_name != current_topic:
+            current_topic = topic_name
+            accumulated_raw = f"{topic_name}:\n\n"
+
+        accumulated_raw = accumulated_raw.split("\n\n", 1)[0] + "\n\n" + chunk
         yield history, accumulated_raw, gr.update(), gr.update()
 
-    # Sanitizzazione finale con paragrafi
+    # Final sanitization
     final_text = service._sanitize_output(accumulated_raw)
-    print(f"   ✅ Generazione completata: {len(final_text)} chars")
 
-    # Aggiorna history e salva su HF (con error handling integrato)
-    new_history = service.add_to_history(topic_clean, final_text, history)
-    print(f"   📚 History aggiornata: {len(new_history)} items (era {len(history)})")
+    # Save each topic separately in history
+    topics = service.parse_topics(topic_clean)
+    for t in topics:
+        history = service.add_to_history(t, final_text, history)
 
-    # Aggiorna i componenti
-    radio_choices, radio_value = create_history_choices(new_history)
-    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)]
-    
-    # Info message
-    info_msg = f"💬 {len(new_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
-    
-    print(f"   🔄 History display aggiornato con {len(new_history)} items")
+    radio_choices, _ = create_history_choices(history)
+    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(history)]
+
+    info_msg = "💬 1 available chat - Open the dropdown to select a chat or a date" if len(history) == 1 else f"💬 {len(history)} available chats - Open the dropdown to select a chat or a date" if len(history) > 1
+
+    print(f"✅ Multi-topic generation completed")
     print(f"{'='*60}\n")
-    
-    yield new_history, final_text, gr.update(choices=radio_choices, info=info_msg), gr.update(choices=delete_choices)
+
+    yield history, final_text, gr.update(choices=radio_choices, info=info_msg), gr.update(choices=delete_choices)
 
 
 # -------------------------------
 # Helper functions
 # -------------------------------
 def truncate(text: str, max_len: int) -> str:
-    """Tronca il testo a max_len caratteri"""
+    # Truncate the text to max_len characters
     return text[:max_len] + "..." if len(text) > max_len else text
 
 
 def create_history_choices(history):
-    """Crea le scelte per il dropdown raggruppate per data
+    # Create the choices for the dropdown grouped by date
     
-    Usa un formato che simula optgroup HTML:
-    - Date come separatori visivi (prefisso speciale per identificarle)
-    - Chat indentate sotto ogni data
-    """
+    # Use a format that simulates optgroup HTML:
+    # - Date as visual separators (special prefix to identify them)
+    # - Chat indented under each date
     if not history:
-        return ["📭 Nessuna chat salvata"], None
+        return ["📭 No chats saved"], None
     
-    # Raggruppa per data
+    # Group by date
     grouped = service.group_by_date(history)
     
     choices = []
@@ -81,39 +94,39 @@ def create_history_choices(history):
     for date_key, chats in grouped.items():
         date_label = chats[0]["date_label"]
         
-        # Header data - solo emoji calendario come identificatore
+        # Header data - only calendar emoji as identifier
         date_header = f"📅 {date_label}"
         choices.append(date_header)
         
-        # Chat items sotto la data - solo indentazione, no bullet points
+        # Chat items under the date - only indentation, no bullet points
         for chat in chats:
             topic_display = truncate(chat["topic"], 60)
-            # Solo 2 spazi per indentazione visiva
+            # Only 2 spaces for visual indentation
             choices.append(f"  {topic_display}")
     
     return choices, None
 
 
 def parse_topic_from_selection(selection: str):
-    """Estrae il topic dalla selezione formato '  Topic'
+    # Extract the topic from the selection format '  Topic'
     
-    Returns il topic pulito, o None se è un header data o selezione non valida
-    """
+    # Returns the clean topic, or None if it is a header data or invalid selection
+   
     if not selection:
         return None
     
-    # Ignora headers data (contengono emoji calendario)
+    # Ignore headers data (contain calendar emoji)
     if "📅" in selection:
         return None
     
-    # Ignora messaggi speciali
+    # Ignore special messages
     if "📭" in selection:
         return None
     
-    # Rimuovi spazi iniziali (indentazione)
+    # Remove initial spaces (indentation)
     topic = selection.strip()
     
-    # Se vuoto dopo lo strip, non è valido
+    # If empty after strip, it is not valid
     if not topic:
         return None
     
@@ -121,72 +134,72 @@ def parse_topic_from_selection(selection: str):
 
 
 # -------------------------------
-# Caricamento iniziale history
+# Initialization of history
 # -------------------------------
 def initialize_history():
-    """Carica l'history da HF Hub quando la pagina viene aperta"""
+    # Load the history from HF Hub when the page is opened
     print("\n🔄 Inizializzazione nuova sessione...")
     fresh_history = service.load_history()
     print(f"   📚 History caricata: {len(fresh_history)} items")
     
     radio_choices, radio_value = create_history_choices(fresh_history)
-    # Delete dropdown: mantieni numeri per identificazione univoca
+    # Delete dropdown: keep numbers for unique identification
     delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(fresh_history)] if fresh_history else []
     
-    # Info message dinamico
+    # Dynamic info message
     if len(fresh_history) == 0:
-        info_msg = "📭 Nessuna chat salvata"
+        info_msg = "📭 No chats saved"
     elif len(fresh_history) == 1:
-        info_msg = "💬 1 chat disponibile - Seleziona una chat o una data per visualizzare"
+        info_msg = "💬 1 available chat - Open the dropdown to select a chat or a date"
     else:
-        info_msg = f"💬 {len(fresh_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+        info_msg = f"💬 {len(fresh_history)} available chats - Open the dropdown to select a chat or a date"
     
     return fresh_history, gr.update(choices=radio_choices, value=radio_value, info=info_msg), gr.update(choices=delete_choices), ""
 
 
 # -------------------------------
-# Callback per ricerca
+# Callback for search
 # -------------------------------
 def search_in_history(search_query, full_history):
-    """Filtra la history in base alla query di ricerca"""
+    # Filter the history based on the search query
     print(f"🔍 Ricerca per: '{search_query}'")
     
     if not search_query.strip():
-        # Mostra tutta la history
+        # Show all the history
         filtered = full_history
-        info_msg = f"💬 {len(full_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+        info_msg = f"💬 {len(full_history)} available chats - Open the dropdown to select a chat or a date"
     else:
         filtered = service.search_history(search_query, full_history)
         if len(filtered) == 0:
-            info_msg = f"🔍 Nessun risultato per '{search_query}'"
+            info_msg = f"🔍 No results for '{search_query}'"
         else:
-            info_msg = f"🔍 {len(filtered)} risultati di {len(full_history)} chat - Seleziona per visualizzare"
+            info_msg = f"🔍 {len(filtered)} results for {len(full_history)} chats - Open the dropdown to select a chat or a date"
     
     radio_choices, radio_value = create_history_choices(filtered)
     return gr.update(choices=radio_choices, value=radio_value, info=info_msg)
 
 
 # -------------------------------
-# Callback per selezione chat o data
+# Callback for selected chat or data
 # -------------------------------
 def load_selected_chat(selection, history):
-    """Carica una chat dall'history quando selezionata, o tutte le chat di una data"""
+    # Load a chat from the history when selected, or all the chats of a date
     
     # CASO 1: È una data? Mostra tutte le chat di quel giorno
     if selection and "📅" in selection:
-        # Estrai la data dal formato "📅 DD/MM/YYYY"
+        # Extract the date from the format "📅 DD/MM/YYYY"
         date_str = selection.replace("📅", "").strip()
         print(f"📅 Data selezionata: '{date_str}' - caricamento chat del giorno...")
         
-        # Raggruppa per data
+        # Group by date
         grouped = service.group_by_date(history)
         
-        # Cerca il gruppo corrispondente
+        # Search for the corresponding group
         for date_key, chats in grouped.items():
             if chats[0]["date_label"] == date_str:
                 print(f"   Trovate {len(chats)} chat per {date_str}")
                 
-                # Crea un output combinato con tutte le chat del giorno
+                # Create a combined output with all the chats of the day
                 combined_output = f"📅 Chat del {date_str}\n"
                 combined_output += "=" * 60 + "\n\n"
                 
@@ -197,22 +210,22 @@ def load_selected_chat(selection, history):
                     if i < len(chats):
                         combined_output += "\n"
                 
-                # Ritorna un topic descrittivo e l'output combinato
+                # Return a descriptive topic and the combined output
                 combined_topic = f"📅 {date_str} ({len(chats)} chat)"
                 return combined_topic, combined_output
         
         print(f"⚠️ Nessuna chat trovata per la data: '{date_str}'")
         return gr.update(), gr.update()
     
-    # CASO 2: È una chat singola
+    # CASE 2: It is a single chat
     topic_display = parse_topic_from_selection(selection)
     
     if not topic_display:
         print(f"⚠️ Selezione non valida: '{selection}'")
         return gr.update(), gr.update()
     
-    # Cerca nella history per topic
-    # Se il topic è troncato (finisce con ...), cerca per prefisso
+    # Search in the history for topic
+    # If the topic is truncated (ends with ...), search for prefix
     is_truncated = topic_display.endswith("...")
     
     for item in history:
@@ -220,18 +233,18 @@ def load_selected_chat(selection, history):
         explanation = item[1]
         
         if is_truncated:
-            # Match parziale (senza i ...)
+            # Match partial (without the i...)
             topic_prefix = topic_display[:-3]  # Rimuovi "..."
             if topic.startswith(topic_prefix):
                 print(f"✅ Chat singola caricata (match parziale): {topic[:50]}")
                 return topic, explanation
         else:
-            # Match esatto
+            # Exact match
             if topic == topic_display:
                 print(f"✅ Chat singola caricata: {topic[:50]}")
                 return topic, explanation
     
-    # Se non trovato, prova un match case-insensitive
+    # If not found, try a case-insensitive match
     topic_lower = topic_display.lower().replace("...", "")
     for item in history:
         topic = item[0]
@@ -244,15 +257,15 @@ def load_selected_chat(selection, history):
 
 
 # -------------------------------
-# Callback per delete
+# Callback for delete
 # -------------------------------
 def delete_selected_chat(delete_selection, history, search_query):
-    """Elimina una chat dall'history"""
+    # Delete a chat from the history
     if not delete_selection:
         return history, gr.update(), gr.update(), "", ""
     
     try:
-        # Formato: "IDX. topic"
+        # Format: "IDX. topic"
         idx = int(delete_selection.split(".")[0].strip())
         
         if 0 <= idx < len(history):
@@ -261,15 +274,15 @@ def delete_selected_chat(delete_selection, history, search_query):
             
             new_history = service.delete_from_history(idx, history)
             
-            # Aggiorna i componenti
+            # Components update
             radio_choices, radio_value = create_history_choices(new_history)
             delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)] if new_history else []
             
             # Info message
             if len(new_history) == 0:
-                info_msg = "📭 Nessuna chat salvata"
+                info_msg = "📭 No chats saved"
             else:
-                info_msg = f"💬 {len(new_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+                info_msg = f"💬 {len(new_history)} available chats - Open the dropdown to select a chat or a date"
             
             return new_history, gr.update(choices=radio_choices, value=None, info=info_msg), gr.update(choices=delete_choices, value=None), "", ""
     except Exception as e:
@@ -283,7 +296,7 @@ def delete_selected_chat(delete_selection, history, search_query):
 # -------------------------------
 with gr.Blocks(title="Tech Explanation Service") as demo:
     gr.Markdown(
-        "# 🎓 Tech Explanation Service\nInserisci un topic tecnico e ricevi una spiegazione chiara e strutturata."
+        "# 🎓 Tech Explanation Service\nEnter one or more technical topics (separated by commas) \nand receive a clear and structured explanation."
     )
 
     # State
@@ -324,7 +337,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 lines=1,
             )
             
-            # History list (dropdown con raggruppamento per data)
+            # History list (dropdown grouped by date)
             history_dropdown = gr.Dropdown(
                 label="📚 Previous chats (newest first)",
                 choices=["⏳ Loading..."],
@@ -349,24 +362,24 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 )
 
     # -------------------------------
-    # Eventi
+    # Events
     # -------------------------------
     
-    # Caricamento iniziale
+    # Initialization
     demo.load(
         fn=initialize_history,
         inputs=None,
         outputs=[history_state, history_dropdown, delete_dropdown, search_box],
     )
     
-    # Ricerca
+    # Search
     search_box.change(
         fn=search_in_history,
         inputs=[search_box, history_state],
         outputs=[history_dropdown],
     )
     
-    # Selezione chat dalla history
+    # Selection of chat from the history
     history_dropdown.change(
         fn=load_selected_chat,
         inputs=[history_dropdown, history_state],
