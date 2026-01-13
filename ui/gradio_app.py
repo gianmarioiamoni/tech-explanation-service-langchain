@@ -81,7 +81,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 )
                 download_btn = gr.Button(
                     "📥 Download",
-                    variant="secondary",
+                    variant="huggingface",
                     scale=1,
                     interactive=False,
                 )
@@ -92,7 +92,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 )
             
             # Download format submenu (expands when Download is clicked)
-            with gr.Accordion("📥 Select Format", open=False, visible=False) as download_accordion:
+            with gr.Accordion("📥 Select Format", open=False, visible=True) as download_accordion:
                 with gr.Row():
                     download_md_btn = gr.Button(
                         "📄 Markdown",
@@ -227,9 +227,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         cancels=[click_stream, submit_stream],
     )
     
-    # Download button toggles format submenu
+    # Download button opens format submenu
     download_btn.click(
-        fn=lambda: (gr.update(visible=True, open=True), gr.update(visible=False, value=None)),
+        fn=lambda: (gr.update(open=True), gr.update(visible=False, value=None)),
         inputs=None,
         outputs=[download_accordion, download_file],
     )
@@ -265,9 +265,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         outputs=[download_file, download_accordion],
     )
     
-    # Clear (also disable download, hide accordion and file)
+    # Clear (also disable download, close accordion and hide file)
     clear_button.click(
-        fn=lambda: ("", "", gr.update(interactive=False), gr.update(visible=False, open=False), gr.update(visible=False, value=None)),
+        fn=lambda: ("", "", gr.update(interactive=False), gr.update(open=False), gr.update(visible=False, value=None)),
         inputs=None,
         outputs=[topic_input, output_box, download_btn, download_accordion, download_file],
     )
