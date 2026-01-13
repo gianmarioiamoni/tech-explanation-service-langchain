@@ -25,99 +25,28 @@ class TechExplanationService:
     # Sanitizzazione output
     # -------------------------------
     def _sanitize_output(self, text: str) -> str:
-        """Rimuove Markdown e formatting indesiderato, preserva emoji e simboli"""
-        # Rimuove Markdown headers
+        """Rimuove solo il Markdown, mantenendo la struttura naturale del testo"""
+        # Rimuove code blocks PRIMA (```...```) per evitare conflitti con inline code
+        # Usa re.DOTALL per matchare anche i newline
+        text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+        
+        # Rimuove Markdown headers (###)
         text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE)
-        # Rimuove bold e italic
+        
+        # Rimuove bold (**text**)
         text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+        
+        # Rimuove italic (*text*)
         text = re.sub(r"\*(.*?)\*", r"\1", text)
-        # Rimuove inline code
+        
+        # Rimuove inline code (`text`)
         text = re.sub(r"`(.*?)`", r"\1", text)
-
-        # Protegge abbreviazioni comuni e tecnologie con punti
-        abbrev_mappings = {
-            # Abbreviazioni comuni
-            'e.g.': '<EG>',
-            'i.e.': '<IE>',
-            'etc.': '<ETC>',
-            'vs.': '<VS>',
-            'cf.': '<CF>',
-            'Dr.': '<DR>',
-            'Mr.': '<MR>',
-            'Mrs.': '<MRS>',
-            'Ms.': '<MS>',
-            'Prof.': '<PROF>',
-            # Tecnologie e framework con .js, .ts, .py, ecc.
-            'Node.js': '<NODEJS>',
-            'Vue.js': '<VUEJS>',
-            'Next.js': '<NEXTJS>',
-            'React.js': '<REACTJS>',
-            'Express.js': '<EXPRESSJS>',
-            'Angular.js': '<ANGULARJS>',
-            'Backbone.js': '<BACKBONEJS>',
-            'D3.js': '<D3JS>',
-            'Three.js': '<THREEJS>',
-            'Chart.js': '<CHARTJS>',
-            'Mocha.js': '<MOCHAJS>',
-            'Ember.js': '<EMBERJS>',
-            'Nest.js': '<NESTJS>',
-            'Nuxt.js': '<NUXTJS>',
-            # Versioni e numeri
-            'v1.0': '<V10>',
-            'v2.0': '<V20>',
-            'v3.0': '<V30>',
-        }
         
-        # Sostituisce abbreviazioni con placeholder (case insensitive per le abbreviazioni comuni)
-        for abbrev, placeholder in abbrev_mappings.items():
-            # Case-insensitive solo per abbreviazioni latine e titoli
-            if abbrev in ['e.g.', 'i.e.', 'etc.', 'vs.', 'cf.', 'Dr.', 'Mr.', 'Mrs.', 'Ms.', 'Prof.']:
-                text = re.sub(re.escape(abbrev), placeholder, text, flags=re.IGNORECASE)
-            else:
-                # Case-sensitive per tecnologie (Node.js diverso da node.js in alcuni contesti)
-                text = text.replace(abbrev, placeholder)
+        # Pulisci spazi multipli
+        text = re.sub(r"\n{3,}", "\n\n", text)  # Max 2 newline consecutive
+        text = re.sub(r" {2,}", " ", text)  # Max 1 spazio tra parole
         
-        # Pattern aggiuntivo: protegge qualsiasi parola seguita da .js, .ts, .py, .rb, .go, .rs
-        # Es: "something.js", "mylib.ts", ecc.
-        tech_extensions = ['.js', '.ts', '.py', '.rb', '.go', '.rs', '.java', '.cpp', '.c', '.h']
-        tech_files_mapping = {}  # Mappa placeholder → originale per preservare case
-        counter = 0
-        
-        for ext in tech_extensions:
-            # Trova pattern come "word.ext" e proteggili
-            pattern = r'\b(\w+)' + re.escape(ext) + r'\b'
-            matches = re.finditer(pattern, text)
-            for match_obj in matches:
-                original = match_obj.group(0)  # Es: "utils.js" (con case originale)
-                # Usa un counter per placeholder unici
-                placeholder = f"<TECHFILE{counter}>"
-                tech_files_mapping[placeholder] = original
-                text = text.replace(original, placeholder)
-                counter += 1
-        
-        # Split su punti seguiti da spazio e maiuscola/emoji/bullet (fine frase vera)
-        sentences = re.split(r'\.\s+(?=[A-Z0-9🔴🟠🟢•\-])', text)
-        
-        # Ripristina le abbreviazioni mappate
-        for abbrev, placeholder in abbrev_mappings.items():
-            sentences = [s.replace(placeholder, abbrev) for s in sentences]
-        
-        # Ripristina i file tech con case originale
-        for i, s in enumerate(sentences):
-            for placeholder, original in tech_files_mapping.items():
-                sentences[i] = sentences[i].replace(placeholder, original)
-        
-        # Pulisci e unisci con doppio newline
-        cleaned_sentences = []
-        for s in sentences:
-            s = s.strip()
-            if s:
-                # Aggiungi il punto finale se manca
-                if not s.endswith('.') and not s.endswith('!') and not s.endswith('?'):
-                    s += '.'
-                cleaned_sentences.append(s)
-        
-        return "\n\n".join(cleaned_sentences)
+        return text.strip()
 
     # -------------------------------
     # Streaming spiegazioni
