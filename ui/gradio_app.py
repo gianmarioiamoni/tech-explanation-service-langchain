@@ -165,42 +165,19 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         outputs=[history_state, history_dropdown, delete_dropdown, topic_input, output_box],
     )
     
-    # -------------------------------
-    # Autoscroll Script (positioned at end of layout)
-    # -------------------------------
-    gr.HTML("""
-        <script>
-            console.log('🧪 AUTOSCROLL: Script loaded');
-            
-            setTimeout(() => {
-                console.log('🔍 AUTOSCROLL: Searching for textareas...');
-                const allTextareas = document.querySelectorAll('textarea');
-                console.log('📊 AUTOSCROLL: Found', allTextareas.length, 'textareas');
-                
-                allTextareas.forEach((ta, index) => {
-                    const parentLabel = ta.closest('label');
-                    const labelText = parentLabel?.textContent || 'No label';
-                    console.log(`   Textarea ${index}:`, labelText.substring(0, 50));
-                    
-                    // Find the explanation textarea by its label
-                    if (labelText.includes('Explanation') || labelText.includes('💡')) {
-                        console.log('   ✅ This is the explanation textarea!');
-                        console.log('   📐 ScrollHeight:', ta.scrollHeight, 'ScrollTop:', ta.scrollTop);
-                        
-                        // Setup aggressive autoscroll
-                        setInterval(() => {
-                            ta.scrollTop = ta.scrollHeight;
-                        }, 50);
-                        
-                        console.log('   ✅ AUTOSCROLL ACTIVE (polling every 50ms)');
-                    }
-                });
-            }, 2000);
-        </script>
-    """)
 
 
 if __name__ == "__main__":
+    import os
+    
+    # Get absolute path to autoscroll.js
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    js_path = os.path.join(current_dir, "static", "autoscroll.js")
+    
+    # Read JavaScript file
+    with open(js_path, 'r') as f:
+        autoscroll_js = f.read()
+    
     demo.launch(
         css="""
             #output_explanation textarea {
@@ -209,5 +186,6 @@ if __name__ == "__main__":
             #output_explanation {
                 height: auto !important;
             }
-        """
+        """,
+        head=f"<script>{autoscroll_js}</script>"
     )
