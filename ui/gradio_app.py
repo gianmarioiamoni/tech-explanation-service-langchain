@@ -33,12 +33,19 @@ def explain_topic_stream(topic: str, history):
     new_history = service.add_to_history(topic_clean, final_text, history)
     print(f"   📚 History aggiornata: {len(new_history)} items (era {len(history)})")
 
-    # Aggiorna dropdown
+    # Aggiorna dropdown con info dinamico
     topics = [t for t, _ in new_history]
+    
+    # Messaggio info aggiornato
+    if len(new_history) == 1:
+        info_msg = f"💬 1 chat disponibile - Apri per visualizzare"
+    else:
+        info_msg = f"💬 {len(new_history)} chat disponibili - Apri per visualizzare"
+    
     print(f"   🔄 Dropdown aggiornato con {len(topics)} topics")
     print(f"{'='*60}\n")
     
-    yield new_history, final_text, gr.update(choices=topics, value=topic_clean)
+    yield new_history, final_text, gr.update(choices=topics, value=topic_clean, info=info_msg)
 
 
 # -------------------------------
@@ -52,8 +59,16 @@ def initialize_history():
     print(f"   📚 History caricata: {len(fresh_history)} items")
     print(f"   Topics: {topics}")
     
+    # Messaggio info dinamico basato sulla history
+    if len(fresh_history) == 0:
+        info_msg = "📭 Nessuna chat salvata"
+    elif len(fresh_history) == 1:
+        info_msg = f"💬 1 chat disponibile - Apri per visualizzare"
+    else:
+        info_msg = f"💬 {len(fresh_history)} chat disponibili - Apri per visualizzare"
+    
     # Ritorna: history_state, dropdown_update
-    return fresh_history, gr.update(choices=topics)
+    return fresh_history, gr.update(choices=topics, info=info_msg)
 
 # -------------------------------
 # Callback chat precedente
@@ -110,6 +125,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 choices=[],  # Vuoto inizialmente, sarà popolato al load
                 value=None,
                 interactive=True,
+                info="⏳ Caricamento history...",  # Messaggio iniziale
             )
 
     # -------------------------------
