@@ -7,7 +7,11 @@ from datetime import datetime
 from typing import Tuple
 
 try:
-    from fpdf import FPDF
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.enums import TA_CENTER
     PDF_AVAILABLE = True
 except ImportError:
     PDF_AVAILABLE = False
@@ -57,42 +61,8 @@ class DocumentExporter:
         return temp_path, filename
     
     @staticmethod
-    def _sanitize_for_pdf(text: str) -> str:
-        # Sanitize text for PDF Latin-1 encoding
-        # Replace common Unicode characters with Latin-1 equivalents
-        #
-        # Args:
-        #     text: Text with potential Unicode characters
-        #
-        # Returns:
-        #     Text safe for Latin-1 encoding
-        
-        # Replace common Unicode characters
-        replacements = {
-            '\u2022': '-',      # Bullet point → dash
-            '\u2013': '-',      # En dash → dash
-            '\u2014': '--',     # Em dash → double dash
-            '\u2018': "'",      # Left single quote → apostrophe
-            '\u2019': "'",      # Right single quote → apostrophe
-            '\u201C': '"',      # Left double quote → quote
-            '\u201D': '"',      # Right double quote → quote
-            '\u2026': '...',    # Ellipsis → three dots
-        }
-        
-        for unicode_char, replacement in replacements.items():
-            text = text.replace(unicode_char, replacement)
-        
-        # Remove any remaining non-Latin-1 characters
-        try:
-            text.encode('latin-1')
-            return text
-        except UnicodeEncodeError:
-            # Encode to Latin-1, ignoring unsupported characters
-            return text.encode('latin-1', errors='ignore').decode('latin-1')
-    
-    @staticmethod
     def export_to_pdf(topic: str, content: str) -> Tuple[str, str]:
-        # Export content to PDF format
+        # Export content to PDF format using ReportLab (full Unicode support)
         #
         # Args:
         #     topic: Chat topic/title
@@ -102,43 +72,70 @@ class DocumentExporter:
         #     Tuple of (file_path, filename)
         
         if not PDF_AVAILABLE:
-            raise ImportError("fpdf2 not installed. Install with: pip install fpdf2")
+            raise ImportError("reportlab not installed. Install with: pip install reportlab")
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"tech_explanation_{timestamp}.pdf"
-        
-        # Sanitize text for Latin-1 encoding
-        topic = DocumentExporter._sanitize_for_pdf(topic)
-        content = DocumentExporter._sanitize_for_pdf(content)
-        
-        # Create PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        
-        # Title
-        pdf.set_font("Helvetica", "B", 16)
-        pdf.cell(0, 10, topic, ln=True, align='C')
-        pdf.ln(5)
-        
-        # Timestamp
-        pdf.set_font("Helvetica", "I", 10)
-        pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align='C')
-        pdf.ln(5)
-        
-        # Content
-        pdf.set_font("Helvetica", "", 11)
-        
-        # Split content by lines and add to PDF
-        for line in content.split('\n'):
-            if line.strip():
-                pdf.multi_cell(0, 6, line)
-            else:
-                pdf.ln(3)
-        
-        # Save to temp file
         temp_path = os.path.join(tempfile.gettempdir(), filename)
-        pdf.output(temp_path)
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(
+            temp_path,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=18,
+        )
+        
+        # Container for PDF elements
+        story = []
+        
+        # Get styles
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            textColor='black',
+            spaceAfter=30,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+        )
+        
+        timestamp_style = ParagraphStyle(
+            'Timestamp',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor='grey',
+            alignment=TA_CENTER,
+            fontName='Helvetica-Oblique',
+        )
+        
+        body_style = styles['BodyText']
+        body_style.fontSize = 11
+        body_style.leading = 14
+        
+        # Add title
+        story.append(Paragraph(topic, title_style))
+        
+        # Add timestamp
+        timestamp_text = f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        story.append(Paragraph(timestamp_text, timestamp_style))
+        story.append(Spacer(1, 0.3 * inch))
+        
+        # Add content paragraphs
+        for paragraph in content.split('\n\n'):
+            if paragraph.strip():
+                # Replace single newlines with <br/> tags for line breaks
+                formatted_text = paragraph.replace('\n', '<br/>')
+                story.append(Paragraph(formatted_text, body_style))
+                story.append(Spacer(1, 0.1 * inch))
+        
+        # Build PDF
+        doc.build(story)
         
         return temp_path, filename
     
