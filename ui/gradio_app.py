@@ -199,9 +199,10 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[delete_dropdown, history_state, search_box],
         outputs=[history_state, history_dropdown, delete_dropdown, topic_input, output_box],
     )
-    
 
+# Enable queue for streaming and cancels functionality
+# Must be called after all events are defined
+demo.queue()
 
 if __name__ == "__main__":
-    demo.queue()  # Required for streaming and cancels functionality
     demo.launch()
