@@ -34,7 +34,17 @@ from ui.callbacks import (
 # -------------------------------
 # UI Layout and Components
 # -------------------------------
-with gr.Blocks(title="Tech Explanation Service") as demo:
+with gr.Blocks(
+    title="Tech Explanation Service",
+    css="""
+        #output_explanation textarea {
+            scroll-behavior: smooth !important;
+        }
+        #output_explanation {
+            height: auto !important;
+        }
+    """
+) as demo:
     gr.Markdown(
         "# 🎓 Tech Explanation Service\nEnter one or more technical topics (separated by commas) \nand receive a clear and structured explanation."
     )
@@ -67,84 +77,25 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 autoscroll=True,
             )
             
-            # Custom JavaScript for robust autoscroll with polling
-            # This ensures the output box always scrolls to bottom during streaming,
-            # using a simple polling approach that works with Gradio's async updates
+            # Ultra-simple autoscroll with aggressive polling
             gr.HTML("""
                 <script>
-                function setupAutoscroll() {
-                    let lastScrollHeight = 0;
-                    let textarea = null;
-                    let attempts = 0;
-                    const maxAttempts = 50;
-                    
-                    // Function to find and setup the textarea
-                    function findTextarea() {
-                        const outputBox = document.getElementById('output_explanation');
-                        if (outputBox) {
-                            textarea = outputBox.querySelector('textarea');
+                // Wait for page to fully load
+                setTimeout(function() {
+                    // Find ALL textareas and keep scrolling the one with id output_explanation
+                    setInterval(function() {
+                        const elem = document.getElementById('output_explanation');
+                        if (elem) {
+                            const textarea = elem.querySelector('textarea');
                             if (textarea) {
-                                console.log('✅ Autoscroll: textarea found');
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
-                    
-                    // Try to find the textarea with retries
-                    function trySetup() {
-                        if (findTextarea()) {
-                            startPolling();
-                        } else {
-                            attempts++;
-                            if (attempts < maxAttempts) {
-                                setTimeout(trySetup, 100);
-                            } else {
-                                console.warn('⚠️ Autoscroll: textarea not found after', maxAttempts, 'attempts');
-                            }
-                        }
-                    }
-                    
-                    // Start continuous polling for scroll
-                    function startPolling() {
-                        console.log('✅ Autoscroll: polling started');
-                        
-                        // Check every 100ms if content changed and scroll
-                        setInterval(() => {
-                            if (textarea && textarea.scrollHeight > lastScrollHeight) {
-                                lastScrollHeight = textarea.scrollHeight;
+                                // Force scroll to bottom
                                 textarea.scrollTop = textarea.scrollHeight;
                             }
-                        }, 100);
-                        
-                        // Also force scroll on any detected change
-                        const observer = new MutationObserver(() => {
-                            if (textarea) {
-                                textarea.scrollTop = textarea.scrollHeight;
-                            }
-                        });
-                        
-                        // Observe the parent container for any changes
-                        const container = textarea.closest('.block');
-                        if (container) {
-                            observer.observe(container, {
-                                childList: true,
-                                subtree: true,
-                                characterData: true
-                            });
                         }
-                    }
-                    
-                    // Start the setup process
-                    trySetup();
-                }
+                    }, 50); // Check every 50ms
+                }, 1000); // Start after 1 second
                 
-                // Initialize when DOM is ready
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', setupAutoscroll);
-                } else {
-                    setupAutoscroll();
-                }
+                console.log('🔄 Autoscroll initialized');
                 </script>
             """)
 
