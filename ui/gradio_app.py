@@ -61,7 +61,12 @@ def truncate(text: str, max_len: int) -> str:
 
 
 def create_history_choices(history):
-    """Crea le scelte per il radio button con data inline per ogni chat"""
+    """Crea le scelte per il dropdown raggruppate per data
+    
+    Usa un formato che simula optgroup HTML:
+    - Date come separatori visivi (prefisso speciale per identificarle)
+    - Chat indentate sotto ogni data
+    """
     if not history:
         return ["📭 Nessuna chat salvata"], None
     
@@ -71,41 +76,46 @@ def create_history_choices(history):
     choices = []
     
     for date_key, chats in grouped.items():
-        # Per ogni chat, includi la data abbreviata nel formato
+        date_label = chats[0]["date_label"]
+        
+        # Header data - usa un prefisso per identificarlo come non-selezionabile
+        # Lo identificheremo con [DATE] all'inizio
+        date_header = f"[DATE]📅 {date_label}"
+        choices.append(date_header)
+        
+        # Chat items sotto la data
         for chat in chats:
-            date_label = chat["date_label"]
-            # Estrai solo giorno/mese (es. "13/01" da "13/01/2026")
-            date_short = "/".join(date_label.split("/")[:2])  # "13/01"
-            
-            # Troncamento per lasciare spazio alla data
-            topic_display = truncate(chat["topic"], 55)
-            
-            # Formato: "DD/MM │ Topic"  (uso │ per separatore visivo)
-            choice_text = f"{date_short} │ {topic_display}"
-            choices.append(choice_text)
+            topic_display = truncate(chat["topic"], 60)
+            # Usa caratteri Unicode per l'indentazione visiva
+            # ├─ per items intermedi, └─ per ultimo item del gruppo
+            choices.append(f"  • {topic_display}")
     
     return choices, None
 
 
 def parse_topic_from_selection(selection: str):
-    """Estrae il topic dalla selezione formato 'DD/MM │ Topic'
+    """Estrae il topic dalla selezione formato '  • Topic'
     
-    Returns il topic pulito, o None se selezione non valida
+    Returns il topic pulito, o None se è un header data o selezione non valida
     """
     if not selection:
         return None
     
+    # Ignora headers data (iniziano con [DATE])
+    if selection.startswith("[DATE]") or "📅" in selection:
+        return None
+    
     # Ignora messaggi speciali
-    if "📭" in selection or not "│" in selection:
+    if "📭" in selection:
         return None
     
-    # Split per separatore │ e prendi la parte dopo (il topic)
-    parts = selection.split("│")
-    if len(parts) != 2:
-        return None
+    # Rimuovi il bullet point e spazi
+    if "•" in selection:
+        topic = selection.split("•", 1)[1].strip()
+        return topic
     
-    topic = parts[1].strip()
-    return topic
+    # Fallback: usa la selezione diretta
+    return selection.strip()
 
 
 # -------------------------------
@@ -151,6 +161,7 @@ def load_selected_chat(selection, history):
     
     if not topic_display:
         # Selezione non valida (probabilmente un header data)
+        print(f"⚠️ Header data selezionato (ignorato): '{selection}'")
         return gr.update(), gr.update()
     
     # Cerca nella history per topic
@@ -260,12 +271,13 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 lines=1,
             )
             
-            # History list (con data inline per ogni chat)
-            history_radio = gr.Radio(
-                label="Previous chats (newest first)",
+            # History list (dropdown con raggruppamento per data)
+            history_dropdown = gr.Dropdown(
+                label="📚 Previous chats (newest first)",
                 choices=["⏳ Loading..."],
                 value=None,
                 interactive=True,
+                allow_custom_value=False,
             )
             
             gr.Markdown("---")
@@ -291,20 +303,20 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     demo.load(
         fn=initialize_history,
         inputs=None,
-        outputs=[history_state, history_radio, delete_dropdown, search_box],
+        outputs=[history_state, history_dropdown, delete_dropdown, search_box],
     )
     
     # Ricerca
     search_box.change(
         fn=search_in_history,
         inputs=[search_box, history_state],
-        outputs=[history_radio],
+        outputs=[history_dropdown],
     )
     
     # Selezione chat dalla history
-    history_radio.change(
+    history_dropdown.change(
         fn=load_selected_chat,
-        inputs=[history_radio, history_state],
+        inputs=[history_dropdown, history_state],
         outputs=[topic_input, output_box],
     )
     
@@ -312,13 +324,13 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     explain_button.click(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state],
-        outputs=[history_state, output_box, history_radio, delete_dropdown],
+        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     )
 
     topic_input.submit(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state],
-        outputs=[history_state, output_box, history_radio, delete_dropdown],
+        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     )
     
     # Clear
@@ -332,7 +344,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     delete_button.click(
         fn=delete_selected_chat,
         inputs=[delete_dropdown, history_state, search_box],
-        outputs=[history_state, history_radio, delete_dropdown, topic_input, output_box],
+        outputs=[history_state, history_dropdown, delete_dropdown, topic_input, output_box],
     )
 
 
