@@ -70,10 +70,13 @@ class TechExplanationService:
             print("✅ HF Hub configurato correttamente")
         except Exception as e:
             print(f"⚠️ HF Hub setup issue: {e}")
-            print("💡 La history sarà disponibile solo nella sessione corrente")
-            print("   Per persistenza su HF Hub:")
-            print("   1. Assicurati che il repo Space esista su HF")
-            print("   2. Configura HF_TOKEN se necessario")
+            print("\n💡 Per abilitare la persistenza della history su HF Spaces:")
+            print("   1. Crea il file 'history.json' con contenuto '[]' nel repo")
+            print("   2. Configura il secret 'HF_TOKEN' nelle Settings dello Space")
+            print("   3. Il token deve avere permessi di WRITE")
+            print("\n   📖 Guida completa: vedi HF_SPACES_SETUP.md")
+            print("   🔗 https://github.com/gianmarioiamoni/tech-explanation-service-langchain/blob/main/HF_SPACES_SETUP.md")
+            print("\n   ⚠️ Per ora la history funzionerà solo nella sessione corrente\n")
 
     # -------------------------------
     # Gestione History HF Hub
@@ -116,11 +119,31 @@ class TechExplanationService:
             print(f"✅ History salvata su HF Hub ({len(history)} items)")
             return True
         except Exception as e:
-            print(f"❌ Errore salvataggio su HF Hub: {e}")
-            print("   💡 Possibili cause:")
-            print("      - Token HF non configurato")
-            print("      - Repo Space non esiste o non hai permessi")
-            print("      - history.json non esiste nel repo")
+            error_msg = str(e)
+            print(f"\n❌ Errore salvataggio su HF Hub: {error_msg}\n")
+            
+            # Diagnosi errore specifica
+            if "401" in error_msg or "Invalid username or password" in error_msg:
+                print("   🔑 PROBLEMA: Token HF non valido o non configurato")
+                print("   📖 Soluzione:")
+                print("      1. Vai su https://huggingface.co/settings/tokens")
+                print("      2. Crea un nuovo token con permessi WRITE")
+                print("      3. Aggiungi come secret 'HF_TOKEN' nelle Settings dello Space")
+                print("      4. Riavvia lo Space")
+            elif "404" in error_msg or "Not Found" in error_msg:
+                print("   📁 PROBLEMA: File history.json non esiste")
+                print("   📖 Soluzione:")
+                print("      1. Vai allo Space su HF")
+                print("      2. Files and versions → Add file → Create a new file")
+                print("      3. Nome: history.json, Contenuto: []")
+                print("      4. Commit e riavvia lo Space")
+            else:
+                print("   💡 Possibili cause:")
+                print("      - Token HF non configurato o scaduto")
+                print("      - Repo Space non esiste o permessi insufficienti")
+                print("      - File history.json non esiste nel repo")
+            
+            print("\n   📖 Guida completa: HF_SPACES_SETUP.md\n")
             return False
     
     def add_to_history(self, topic: str, explanation: str, history):
