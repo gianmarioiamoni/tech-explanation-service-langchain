@@ -145,40 +145,48 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     
     # Explain (save event references for stop functionality)
     # Enable stop button when generation starts, disable when done
-    explain_click_event = explain_button.click(
+    click_enable = explain_button.click(
         fn=lambda: gr.update(interactive=True),
         inputs=None,
         outputs=[stop_btn],
-    ).then(
+    )
+    
+    click_stream = click_enable.then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
-    ).then(
+    )
+    
+    click_disable = click_stream.then(
         fn=lambda: gr.update(interactive=False),
         inputs=None,
         outputs=[stop_btn],
     )
 
-    explain_submit_event = topic_input.submit(
+    submit_enable = topic_input.submit(
         fn=lambda: gr.update(interactive=True),
         inputs=None,
         outputs=[stop_btn],
-    ).then(
+    )
+    
+    submit_stream = submit_enable.then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
-    ).then(
+    )
+    
+    submit_disable = submit_stream.then(
         fn=lambda: gr.update(interactive=False),
         inputs=None,
         outputs=[stop_btn],
     )
     
-    # Stop button cancels both explain events
+    # Stop button cancels only the streaming events (not enable/disable events)
     stop_btn.click(
-        fn=None,
+        fn=lambda: gr.update(interactive=False),
         inputs=None,
-        outputs=None,
-        cancels=[explain_click_event, explain_submit_event],
+        outputs=[stop_btn],
+        cancels=[click_stream, submit_stream],
     )
     
     # Clear
