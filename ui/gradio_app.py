@@ -114,6 +114,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
             download_file = gr.File(
                 label="📥 Download File",
                 visible=False,
+                interactive=False,  # Disable upload, only download
             )
 
         with gr.Column(scale=1):
