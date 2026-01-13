@@ -150,7 +150,6 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         fn=lambda: gr.update(visible=True),
         inputs=None,
         outputs=[stop_btn],
-        queue=False,
     ).then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
@@ -159,14 +158,12 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         fn=lambda: gr.update(visible=False),
         inputs=None,
         outputs=[stop_btn],
-        queue=False,
     )
 
     explain_submit_event = topic_input.submit(
         fn=lambda: gr.update(visible=True),
         inputs=None,
         outputs=[stop_btn],
-        queue=False,
     ).then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
@@ -175,7 +172,6 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         fn=lambda: gr.update(visible=False),
         inputs=None,
         outputs=[stop_btn],
-        queue=False,
     )
     
     # Stop button cancels both explain events
