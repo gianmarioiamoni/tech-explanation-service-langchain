@@ -54,42 +54,32 @@ def explain_topic_stream(topic: str, history, history_mode: str):
     print(f"\n{'='*60}")
     print(f"🚀 Multi-topic request: '{topic_clean}'")
 
-    current_topic = None
-    accumulated_raw = ""
-    current_topic_content = ""  # Buffer per il topic corrente in separate mode
+    # Parse topics to maintain order
+    topics = service.parse_topics(topic_clean)
+    topic_contents = {}  # Dictionary to track accumulated content per topic
     aggregate_mode = history_mode == "Aggregate into one chat"
 
-    for topic_name, chunk in service.explain_multiple_stream(topic_clean):
-        # New topic detected
-        if topic_name != current_topic:
-            current_topic = topic_name
-            current_topic_content = ""  # Reset buffer per nuovo topic
-            
-            if aggregate_mode:
-                # Aggregate mode: ADD new topic to existing content
-                if accumulated_raw:  # If there's already content
-                    accumulated_raw += f"\n\n{'='*60}\n\n{topic_name}:\n\n"
-                else:  # First topic
-                    accumulated_raw = f"{topic_name}:\n\n"
-            else:
-                # Separate mode: RESET for each topic (show only current)
-                accumulated_raw = f"{topic_name}:\n\n"
+    for topic_name, accumulated_text in service.explain_multiple_stream(topic_clean):
+        # Note: accumulated_text is already the FULL text for this topic (not incremental)
+        # Store the latest accumulated text for this topic
+        topic_contents[topic_name] = accumulated_text
 
-        # Update chunk content
         if aggregate_mode:
-            # Aggregate mode: append chunk to the end of all content
-            accumulated_raw += chunk
+            # Aggregate mode: rebuild entire output combining all topics in order
+            accumulated_raw = ""
+            for t in topics:
+                if t in topic_contents:
+                    if accumulated_raw:  # Add separator between topics
+                        accumulated_raw += f"\n\n{'='*60}\n\n"
+                    accumulated_raw += f"{t}:\n\n{topic_contents[t]}"
         else:
-            # Separate mode: accumulate chunks for current topic only
-            current_topic_content += chunk
-            accumulated_raw = f"{current_topic}:\n\n{current_topic_content}"
+            # Separate mode: show only current topic
+            accumulated_raw = f"{topic_name}:\n\n{accumulated_text}"
         
         yield history, accumulated_raw, gr.update(), gr.update()
 
     # Final sanitization
     final_text = service._sanitize_output(accumulated_raw)
-
-    topics = service.parse_topics(topic_clean)
 
     if history_mode == "Aggregate into one chat":
         # Single aggregated chat
