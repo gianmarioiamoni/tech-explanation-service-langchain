@@ -15,16 +15,15 @@ service = TechExplanationService()
 
 
 def search_in_history(search_query, full_history):
-    """
-    Filter the history based on search query.
+    # Filter the history based on search query.
+    #
+    # Args:
+    #     search_query: Text to search for in topics and explanations
+    #     full_history: Complete chat history
+    #
+    # Returns:
+    #     Dropdown update with filtered results
     
-    Args:
-        search_query: Text to search for in topics and explanations
-        full_history: Complete chat history
-        
-    Returns:
-        Dropdown update with filtered results
-    """
     print(f"🔍 Ricerca per: '{search_query}'")
     
     if not search_query.strip():

@@ -16,16 +16,19 @@ service = TechExplanationService()
 
 
 def initialize_history():
-    """
-    Initialize history when the page is loaded.
-    Loads history from Hugging Face Hub.
-    
-    Returns:
-        Tuple of (history, history_dropdown_update, delete_dropdown_update, search_box_clear)
-    """
-    print("\n🔄 Inizializzazione nuova sessione...")
+    # Initialize history when the page is loaded.
+    # Loads history from Hugging Face Hub.
+    # Args:
+    #     None
+    #
+    # Returns:
+    #     Tuple of (history, history_dropdown_update, delete_dropdown_update, search_box_clear)
+    #
+    # Returns:
+    #     Tuple of (history, history_dropdown_update, delete_dropdown_update, search_box_clear)
+    print("\n🔄 Initialization of new session...")
     fresh_history = service.load_history()
-    print(f"   📚 History caricata: {len(fresh_history)} items")
+    print(f"   📚 History loaded: {len(fresh_history)} items")
     
     radio_choices, radio_value = service.create_history_choices(fresh_history)
     delete_choices = service.create_delete_choices(fresh_history)
@@ -37,17 +40,15 @@ def initialize_history():
 
 
 def load_selected_chat(selection, history):
-    """
-    Load a chat from history when selected from dropdown.
-    Handles both single chat selection and date selection (shows all chats for that day).
-    
-    Args:
-        selection: Selected item from dropdown (can be a chat or a date header)
-        history: Current chat history
-        
-    Returns:
-        Tuple of (topic_text, explanation_text) or gr.update() if invalid
-    """
+    # Load a chat from history when selected from dropdown.
+    #
+    # Args:
+    #     selection: Selected item from dropdown (can be a chat or a date header)
+    #     history: Current chat history
+    #
+    # Returns:
+    #     Tuple of (topic_text, explanation_text) or gr.update() if invalid
+   
     # CASE 1: Is it a date? Show all chats for that day
     if selection and "📅" in selection:
         # Extract the date from the format "📅 DD/MM/YYYY"
@@ -84,17 +85,16 @@ def load_selected_chat(selection, history):
 
 
 def delete_selected_chat(delete_selection, history, search_query):
-    """
-    Delete a chat from history.
+    # Delete a chat from history.
+    #
+    # Args:
+    #     delete_selection: Selected item from delete dropdown (format: "IDX. topic")
+    #     history: Current chat history
+    #     search_query: Current search query (unused, but kept for compatibility)
+    #
+    # Returns:
+    #     Tuple of (new_history, history_dropdown_update, delete_dropdown_update, topic_clear, output_clear)
     
-    Args:
-        delete_selection: Selected item from delete dropdown (format: "IDX. topic")
-        history: Current chat history
-        search_query: Current search query (unused, but kept for compatibility)
-        
-    Returns:
-        Tuple of (new_history, history_dropdown_update, delete_dropdown_update, topic_clear, output_clear)
-    """
     if not delete_selection:
         return history, gr.update(), gr.update(), "", ""
     

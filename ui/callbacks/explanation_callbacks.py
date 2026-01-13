@@ -16,17 +16,16 @@ service = TechExplanationService()
 
 
 def explain_topic_stream(topic: str, history, history_mode: str):
-    """
-    Stream the explanation for one or more topics.
+    # Stream the explanation for one or more topics.
+    #
+    # Args:
+    #     topic: Technical topic(s) to explain (comma-separated for multiple)
+    #     history: Current chat history
+    #     history_mode: "Aggregate into one chat" or "Save each topic as a separate chat"
+    #
+    # Yields:
+    #     Tuple of (history, output_text, history_dropdown_update, delete_dropdown_update)
     
-    Args:
-        topic: Technical topic(s) to explain (comma-separated for multiple)
-        history: Current chat history
-        history_mode: "Aggregate into one chat" or "Save each topic as a separate chat"
-        
-    Yields:
-        Tuple of (history, output_text, history_dropdown_update, delete_dropdown_update)
-    """
     topic_clean = (topic or "").strip()
     if not topic_clean:
         yield history, "Please enter at least one technical topic.", gr.update(), gr.update()
