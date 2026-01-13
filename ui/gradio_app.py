@@ -59,11 +59,19 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 value="Aggregate into one chat",
             )
 
+            # Stop button for canceling generation
+            stop_btn = gr.Button(
+                "⏹️ Stop",
+                variant="stop",
+                visible=False,
+            )
+            
             output_box = gr.Textbox(
                 label="💡 Explanation",
                 lines=18,
                 interactive=False,
                 autoscroll=True,
+                show_copy_button=True,
             )
 
             with gr.Row():
@@ -137,17 +145,46 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         outputs=[topic_input, output_box],
     )
     
-    # Explain
-    explain_button.click(
+    # Explain (save event references for stop functionality)
+    # Show stop button when generation starts
+    explain_click_event = explain_button.click(
+        fn=lambda: gr.update(visible=True),
+        inputs=None,
+        outputs=[stop_btn],
+        queue=False,
+    ).then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
+    ).then(
+        fn=lambda: gr.update(visible=False),
+        inputs=None,
+        outputs=[stop_btn],
+        queue=False,
     )
 
-    topic_input.submit(
+    explain_submit_event = topic_input.submit(
+        fn=lambda: gr.update(visible=True),
+        inputs=None,
+        outputs=[stop_btn],
+        queue=False,
+    ).then(
         fn=explain_topic_stream,
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
+    ).then(
+        fn=lambda: gr.update(visible=False),
+        inputs=None,
+        outputs=[stop_btn],
+        queue=False,
+    )
+    
+    # Stop button cancels both explain events
+    stop_btn.click(
+        fn=None,
+        inputs=None,
+        outputs=None,
+        cancels=[explain_click_event, explain_submit_event],
     )
     
     # Clear
