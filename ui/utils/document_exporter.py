@@ -57,6 +57,40 @@ class DocumentExporter:
         return temp_path, filename
     
     @staticmethod
+    def _sanitize_for_pdf(text: str) -> str:
+        # Sanitize text for PDF Latin-1 encoding
+        # Replace common Unicode characters with Latin-1 equivalents
+        #
+        # Args:
+        #     text: Text with potential Unicode characters
+        #
+        # Returns:
+        #     Text safe for Latin-1 encoding
+        
+        # Replace common Unicode characters
+        replacements = {
+            '\u2022': '-',      # Bullet point → dash
+            '\u2013': '-',      # En dash → dash
+            '\u2014': '--',     # Em dash → double dash
+            '\u2018': "'",      # Left single quote → apostrophe
+            '\u2019': "'",      # Right single quote → apostrophe
+            '\u201C': '"',      # Left double quote → quote
+            '\u201D': '"',      # Right double quote → quote
+            '\u2026': '...',    # Ellipsis → three dots
+        }
+        
+        for unicode_char, replacement in replacements.items():
+            text = text.replace(unicode_char, replacement)
+        
+        # Remove any remaining non-Latin-1 characters
+        try:
+            text.encode('latin-1')
+            return text
+        except UnicodeEncodeError:
+            # Encode to Latin-1, ignoring unsupported characters
+            return text.encode('latin-1', errors='ignore').decode('latin-1')
+    
+    @staticmethod
     def export_to_pdf(topic: str, content: str) -> Tuple[str, str]:
         # Export content to PDF format
         #
@@ -73,28 +107,27 @@ class DocumentExporter:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"tech_explanation_{timestamp}.pdf"
         
-        # Create PDF with Unicode support
+        # Sanitize text for Latin-1 encoding
+        topic = DocumentExporter._sanitize_for_pdf(topic)
+        content = DocumentExporter._sanitize_for_pdf(content)
+        
+        # Create PDF
         pdf = FPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
         
-        # Add Unicode font (DejaVu Sans is built-in fpdf2)
-        pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-        pdf.add_font("DejaVu", "B", "DejaVuSans-Bold.ttf", uni=True)
-        pdf.add_font("DejaVu", "I", "DejaVuSans-Oblique.ttf", uni=True)
-        
         # Title
-        pdf.set_font("DejaVu", "B", 16)
+        pdf.set_font("Helvetica", "B", 16)
         pdf.cell(0, 10, topic, ln=True, align='C')
         pdf.ln(5)
         
         # Timestamp
-        pdf.set_font("DejaVu", "I", 10)
+        pdf.set_font("Helvetica", "I", 10)
         pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align='C')
         pdf.ln(5)
         
         # Content
-        pdf.set_font("DejaVu", "", 11)
+        pdf.set_font("Helvetica", "", 11)
         
         # Split content by lines and add to PDF
         for line in content.split('\n'):
