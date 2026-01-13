@@ -34,17 +34,7 @@ from ui.callbacks import (
 # -------------------------------
 # UI Layout and Components
 # -------------------------------
-with gr.Blocks(
-    title="Tech Explanation Service",
-    css="""
-        #output_explanation textarea {
-            scroll-behavior: smooth !important;
-        }
-        #output_explanation {
-            height: auto !important;
-        }
-    """
-) as demo:
+with gr.Blocks(title="Tech Explanation Service") as demo:
     gr.Markdown(
         "# 🎓 Tech Explanation Service\nEnter one or more technical topics (separated by commas) \nand receive a clear and structured explanation."
     )
@@ -211,4 +201,13 @@ with gr.Blocks(
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(
+        css="""
+            #output_explanation textarea {
+                scroll-behavior: smooth !important;
+            }
+            #output_explanation {
+                height: auto !important;
+            }
+        """
+    )
