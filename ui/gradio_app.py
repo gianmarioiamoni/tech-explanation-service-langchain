@@ -66,6 +66,75 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 elem_id="output_explanation",
                 autoscroll=True,
             )
+            
+            # Custom JavaScript for robust autoscroll
+            # This ensures the output box always scrolls to bottom during streaming,
+            # even for very long content that exceeds the box height
+            gr.HTML("""
+                <script>
+                function setupAutoscroll() {
+                    // Find the output textbox by its elem_id
+                    const outputBox = document.getElementById('output_explanation');
+                    if (!outputBox) {
+                        setTimeout(setupAutoscroll, 100);
+                        return;
+                    }
+                    
+                    // Find the actual textarea element inside the Gradio component
+                    const textarea = outputBox.querySelector('textarea');
+                    if (!textarea) {
+                        setTimeout(setupAutoscroll, 100);
+                        return;
+                    }
+                    
+                    console.log('✅ Autoscroll setup complete for output_explanation');
+                    
+                    // Create a MutationObserver to watch for content changes
+                    const observer = new MutationObserver(() => {
+                        // Scroll to bottom whenever content changes
+                        textarea.scrollTop = textarea.scrollHeight;
+                    });
+                    
+                    // Also observe attribute changes (value changes)
+                    observer.observe(textarea, {
+                        childList: true,
+                        subtree: true,
+                        characterData: true,
+                        attributes: true,
+                        attributeFilter: ['value']
+                    });
+                    
+                    // Also listen to input events
+                    textarea.addEventListener('input', () => {
+                        textarea.scrollTop = textarea.scrollHeight;
+                    });
+                    
+                    // Force scroll on any value change
+                    const originalValueSetter = Object.getOwnPropertyDescriptor(
+                        HTMLTextAreaElement.prototype, 'value'
+                    ).set;
+                    
+                    Object.defineProperty(textarea, 'value', {
+                        set: function(newValue) {
+                            originalValueSetter.call(this, newValue);
+                            setTimeout(() => {
+                                this.scrollTop = this.scrollHeight;
+                            }, 10);
+                        },
+                        get: function() {
+                            return this.value;
+                        }
+                    });
+                }
+                
+                // Initialize when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', setupAutoscroll);
+                } else {
+                    setupAutoscroll();
+                }
+                </script>
+            """)
 
             with gr.Row():
                 explain_button = gr.Button(
