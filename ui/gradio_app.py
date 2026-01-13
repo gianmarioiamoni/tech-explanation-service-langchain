@@ -16,6 +16,10 @@ def explain_topic_stream(topic: str, history):
         yield history, "Please enter a technical topic.", gr.update()
         return
 
+    print(f"\n{'='*60}")
+    print(f"🚀 Nuova richiesta: '{topic_clean}'")
+    print(f"   History corrente: {len(history)} items")
+
     # Accumula i chunk RAW dallo streaming
     accumulated_raw = ""
     for chunk in service.explain_stream(topic_clean):
@@ -24,12 +28,17 @@ def explain_topic_stream(topic: str, history):
 
     # Sanitizzazione finale con paragrafi
     final_text = service._sanitize_output(accumulated_raw)
+    print(f"   ✅ Generazione completata: {len(final_text)} chars")
 
     # Aggiorna history e salva su HF (con error handling integrato)
     new_history = service.add_to_history(topic_clean, final_text, history)
+    print(f"   📚 History aggiornata: {len(new_history)} items (era {len(history)})")
 
     # Aggiorna dropdown
     topics = [t for t, _ in new_history]
+    print(f"   🔄 Dropdown aggiornato con {len(topics)} topics")
+    print(f"{'='*60}\n")
+    
     yield new_history, final_text, gr.update(choices=topics, value=topic_clean)
 
 
@@ -37,9 +46,16 @@ def explain_topic_stream(topic: str, history):
 # Callback chat precedente
 # -------------------------------
 def load_previous_chat(selected_topic, history):
+    """Carica una chat precedente dalla history"""
+    print(f"🔍 Ricerca chat per topic: '{selected_topic}'")
+    print(f"   History ha {len(history)} items")
+    
     for t, e in history:
         if t == selected_topic:
+            print(f"   ✅ Trovata! Explanation: {len(e)} chars")
             return t, e
+    
+    print(f"   ❌ Non trovata")
     return "", ""
 
 
@@ -77,7 +93,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         with gr.Column(scale=1):
             history_dropdown = gr.Dropdown(
                 label="Previous chats",
-                choices=[t for t, _ in loaded_history],
+                choices=[t for t, _ in loaded_history],  # Choices iniziali
+                value=None,
                 interactive=True,
             )
 

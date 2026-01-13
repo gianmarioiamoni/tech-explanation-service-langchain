@@ -67,11 +67,13 @@ class TechExplanationService:
     def load_history(self):
         """Carica la history da HF Hub. Ritorna lista vuota se non esiste."""
         try:
+            # Force download from server, not cache
             file_path = hf_hub_download(
                 repo_id=f"{self.HF_USERNAME}/{self.HF_REPO}",
                 filename=self.HISTORY_FILE,
                 repo_type="space",
                 token=self.HF_TOKEN or os.getenv("HF_TOKEN"),
+                force_download=True,  # Bypassa la cache locale
             )
             with open(file_path, "r", encoding="utf-8") as f:
                 history = json.load(f)
