@@ -34,8 +34,9 @@ class TechExplanationService:
         # Rimuove inline code
         text = re.sub(r"`(.*?)`", r"\1", text)
 
-        # Protegge abbreviazioni comuni sostituendo temporaneamente i loro punti
+        # Protegge abbreviazioni comuni e tecnologie con punti
         abbrev_mappings = {
+            # Abbreviazioni comuni
             'e.g.': '<EG>',
             'i.e.': '<IE>',
             'etc.': '<ETC>',
@@ -46,18 +47,65 @@ class TechExplanationService:
             'Mrs.': '<MRS>',
             'Ms.': '<MS>',
             'Prof.': '<PROF>',
+            # Tecnologie e framework con .js, .ts, .py, ecc.
+            'Node.js': '<NODEJS>',
+            'Vue.js': '<VUEJS>',
+            'Next.js': '<NEXTJS>',
+            'React.js': '<REACTJS>',
+            'Express.js': '<EXPRESSJS>',
+            'Angular.js': '<ANGULARJS>',
+            'Backbone.js': '<BACKBONEJS>',
+            'D3.js': '<D3JS>',
+            'Three.js': '<THREEJS>',
+            'Chart.js': '<CHARTJS>',
+            'Mocha.js': '<MOCHAJS>',
+            'Ember.js': '<EMBERJS>',
+            'Nest.js': '<NESTJS>',
+            'Nuxt.js': '<NUXTJS>',
+            # Versioni e numeri
+            'v1.0': '<V10>',
+            'v2.0': '<V20>',
+            'v3.0': '<V30>',
         }
         
-        # Sostituisce abbreviazioni con placeholder (case insensitive)
+        # Sostituisce abbreviazioni con placeholder (case insensitive per le abbreviazioni comuni)
         for abbrev, placeholder in abbrev_mappings.items():
-            text = re.sub(re.escape(abbrev), placeholder, text, flags=re.IGNORECASE)
+            # Case-insensitive solo per abbreviazioni latine e titoli
+            if abbrev in ['e.g.', 'i.e.', 'etc.', 'vs.', 'cf.', 'Dr.', 'Mr.', 'Mrs.', 'Ms.', 'Prof.']:
+                text = re.sub(re.escape(abbrev), placeholder, text, flags=re.IGNORECASE)
+            else:
+                # Case-sensitive per tecnologie (Node.js diverso da node.js in alcuni contesti)
+                text = text.replace(abbrev, placeholder)
+        
+        # Pattern aggiuntivo: protegge qualsiasi parola seguita da .js, .ts, .py, .rb, .go, .rs
+        # Es: "something.js", "mylib.ts", ecc.
+        tech_extensions = ['.js', '.ts', '.py', '.rb', '.go', '.rs', '.java', '.cpp', '.c', '.h']
+        tech_files_mapping = {}  # Mappa placeholder → originale per preservare case
+        counter = 0
+        
+        for ext in tech_extensions:
+            # Trova pattern come "word.ext" e proteggili
+            pattern = r'\b(\w+)' + re.escape(ext) + r'\b'
+            matches = re.finditer(pattern, text)
+            for match_obj in matches:
+                original = match_obj.group(0)  # Es: "utils.js" (con case originale)
+                # Usa un counter per placeholder unici
+                placeholder = f"<TECHFILE{counter}>"
+                tech_files_mapping[placeholder] = original
+                text = text.replace(original, placeholder)
+                counter += 1
         
         # Split su punti seguiti da spazio e maiuscola/emoji/bullet (fine frase vera)
         sentences = re.split(r'\.\s+(?=[A-Z0-9🔴🟠🟢•\-])', text)
         
-        # Ripristina le abbreviazioni
+        # Ripristina le abbreviazioni mappate
         for abbrev, placeholder in abbrev_mappings.items():
             sentences = [s.replace(placeholder, abbrev) for s in sentences]
+        
+        # Ripristina i file tech con case originale
+        for i, s in enumerate(sentences):
+            for placeholder, original in tech_files_mapping.items():
+                sentences[i] = sentences[i].replace(placeholder, original)
         
         # Pulisci e unisci con doppio newline
         cleaned_sentences = []
