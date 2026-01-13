@@ -44,7 +44,7 @@ def explain_topic_stream(topic: str, history):
 
     # Aggiorna i componenti
     radio_choices, radio_value = create_history_choices(new_history)
-    delete_choices = [f"🗑️ {i}: {truncate(h[0], 40)}" for i, h in enumerate(new_history)]
+    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)]
     
     print(f"   🔄 History display aggiornato con {len(new_history)} items")
     print(f"{'='*60}\n")
@@ -69,40 +69,41 @@ def create_history_choices(history):
     grouped = service.group_by_date(history)
     
     choices = []
+    
     for date_key, chats in grouped.items():
         date_label = chats[0]["date_label"]
-        # Header data (non selezionabile, solo visivo)
-        choices.append(f"━━━ 📅 {date_label} ━━━")
+        # Header data - con carattere speciale iniziale per identificarla
+        date_header = f"━━━ 📅 {date_label} ━━━"
+        choices.append(date_header)
         
-        # Chat items
+        # Chat items sotto alla data - solo topic, no numeri
         for chat in chats:
-            topic = truncate(chat["topic"], 50)
-            # Trova l'indice originale
-            original_idx = None
-            for idx, item in enumerate(history):
-                if len(item) >= 2 and item[0] == chat["topic"]:
-                    if len(item) == 3 and item[2] == chat["timestamp"]:
-                        original_idx = idx
-                        break
-                    elif len(item) == 2:
-                        original_idx = idx
-                        break
-            
-            choices.append(f"   {original_idx}: {topic}")
+            # Troncamento più lungo per leggibilità
+            topic_display = truncate(chat["topic"], 65)
+            # Formato: solo topic con indentazione visiva (4 spazi)
+            choices.append(f"    {topic_display}")
     
     return choices, None
 
 
-def parse_selection(selection: str):
-    """Estrae l'indice dalla selezione"""
-    if not selection or "━━━" in selection:
+def parse_topic_from_selection(selection: str):
+    """Estrae il topic dalla selezione, rimuovendo l'indentazione
+    
+    Returns il topic pulito, o None se è un header data
+    """
+    if not selection:
         return None
-    try:
-        # Formato: "   IDX: topic"
-        idx_str = selection.strip().split(":")[0].strip()
-        return int(idx_str)
-    except:
+    
+    # Ignora headers data
+    if "━━━" in selection or "📅" in selection:
         return None
+    
+    # Rimuovi indentazione e eventuali "..."
+    topic = selection.strip()
+    
+    # Se il topic è troncato (finisce con ...), cerca un match parziale
+    # altrimenti cerca un match esatto
+    return topic
 
 
 # -------------------------------
@@ -115,7 +116,8 @@ def initialize_history():
     print(f"   📚 History caricata: {len(fresh_history)} items")
     
     radio_choices, radio_value = create_history_choices(fresh_history)
-    delete_choices = [f"🗑️ {i}: {truncate(h[0], 40)}" for i, h in enumerate(fresh_history)] if fresh_history else []
+    # Delete dropdown: mantieni numeri per identificazione univoca
+    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(fresh_history)] if fresh_history else []
     
     return fresh_history, gr.update(choices=radio_choices, value=radio_value), gr.update(choices=delete_choices), ""
 
@@ -142,13 +144,42 @@ def search_in_history(search_query, full_history):
 # -------------------------------
 def load_selected_chat(selection, history):
     """Carica una chat dall'history quando selezionata"""
-    idx = parse_selection(selection)
-    if idx is not None and 0 <= idx < len(history):
-        item = history[idx]
+    # Estrai topic dalla selezione
+    topic_display = parse_topic_from_selection(selection)
+    
+    if not topic_display:
+        # Selezione non valida (probabilmente un header data)
+        return gr.update(), gr.update()
+    
+    # Cerca nella history per topic
+    # Se il topic è troncato (finisce con ...), cerca per prefisso
+    is_truncated = topic_display.endswith("...")
+    
+    for item in history:
         topic = item[0]
         explanation = item[1]
-        print(f"✅ Chat {idx} caricata: {topic[:50]}")
-        return topic, explanation
+        
+        if is_truncated:
+            # Match parziale (senza i ...)
+            topic_prefix = topic_display[:-3]  # Rimuovi "..."
+            if topic.startswith(topic_prefix):
+                print(f"✅ Chat caricata (match parziale): {topic[:50]}")
+                return topic, explanation
+        else:
+            # Match esatto
+            if topic == topic_display:
+                print(f"✅ Chat caricata: {topic[:50]}")
+                return topic, explanation
+    
+    # Se non trovato, prova un match case-insensitive
+    topic_lower = topic_display.lower().replace("...", "")
+    for item in history:
+        topic = item[0]
+        if topic.lower().startswith(topic_lower):
+            print(f"✅ Chat caricata (match case-insensitive): {topic[:50]}")
+            return topic, item[1]
+    
+    print(f"⚠️ Chat non trovata per selezione: '{topic_display}'")
     return gr.update(), gr.update()
 
 
@@ -161,8 +192,8 @@ def delete_selected_chat(delete_selection, history, search_query):
         return history, gr.update(), gr.update(), "", ""
     
     try:
-        # Formato: "🗑️ IDX: topic"
-        idx = int(delete_selection.split(":")[0].replace("🗑️", "").strip())
+        # Formato: "IDX. topic"
+        idx = int(delete_selection.split(".")[0].strip())
         
         if 0 <= idx < len(history):
             topic = history[idx][0]
@@ -172,7 +203,7 @@ def delete_selected_chat(delete_selection, history, search_query):
             
             # Aggiorna i componenti
             radio_choices, radio_value = create_history_choices(new_history)
-            delete_choices = [f"🗑️ {i}: {truncate(h[0], 40)}" for i, h in enumerate(new_history)] if new_history else []
+            delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)] if new_history else []
             
             return new_history, gr.update(choices=radio_choices, value=None), gr.update(choices=delete_choices, value=None), "", ""
     except Exception as e:
