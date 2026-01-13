@@ -15,15 +15,14 @@ MSG_MULTIPLE_CHATS = "💬 {count} available chats - Open the dropdown to select
 
 
 def get_history_info_message(history_count: int) -> str:
-    """
-    Generate appropriate info message based on history count.
+    # Generate appropriate info message based on history count.
+    #
+    # Args:
+    #     history_count: Number of chats in history
+    #
+    # Returns:
+    #     Formatted info message for the UI
     
-    Args:
-        history_count: Number of chats in history
-        
-    Returns:
-        Formatted info message for the UI
-    """
     if history_count == 0:
         return MSG_NO_CHATS
     elif history_count == 1:
