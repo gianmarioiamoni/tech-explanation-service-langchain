@@ -78,25 +78,11 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                     scale=1,
                     interactive=False,
                 )
-                copy_btn = gr.Button(
-                    "📋 Copy",
-                    variant="secondary",
-                    scale=1,
-                    interactive=False,
-                )
                 clear_button = gr.Button(
                     "🔄 Clear",
                     variant="secondary",
                     scale=1,
                 )
-            
-            # Copy buffer - always visible, user can select and copy manually
-            copy_buffer = gr.Textbox(
-                label="📋 Copy Buffer (Select all Ctrl+A, then copy Ctrl+C)",
-                lines=3,
-                interactive=True,
-                visible=False,
-            )
 
         with gr.Column(scale=1):
             gr.Markdown("### 📚 Chat History")
@@ -151,15 +137,10 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     # Selection of chat from the history
-    # Also enable copy button when chat is loaded
     history_dropdown.change(
         fn=load_selected_chat,
         inputs=[history_dropdown, history_state],
         outputs=[topic_input, output_box],
-    ).then(
-        fn=lambda text: gr.update(interactive=bool(text)),
-        inputs=[output_box],
-        outputs=[copy_btn],
     )
     
     # Explain (save event references for stop functionality)
@@ -177,9 +158,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     click_disable = click_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
+        fn=lambda: gr.update(interactive=False),
         inputs=None,
-        outputs=[stop_btn, copy_btn],
+        outputs=[stop_btn],
     )
 
     submit_enable = topic_input.submit(
@@ -195,9 +176,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     submit_disable = submit_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
+        fn=lambda: gr.update(interactive=False),
         inputs=None,
-        outputs=[stop_btn, copy_btn],
+        outputs=[stop_btn],
     )
     
     # Stop button cancels only the streaming events (not enable/disable events)
@@ -208,18 +189,11 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         cancels=[click_stream, submit_stream],
     )
     
-    # Copy (copy output text to buffer for manual copy)
-    copy_btn.click(
-        fn=lambda text: gr.update(value=text, visible=True),
-        inputs=[output_box],
-        outputs=[copy_buffer],
-    )
-    
-    # Clear (also disable copy button and hide copy buffer)
+    # Clear
     clear_button.click(
-        fn=lambda: ("", "", gr.update(interactive=False), gr.update(visible=False, value="")),
+        fn=lambda: ("", ""),
         inputs=None,
-        outputs=[topic_input, output_box, copy_btn, copy_buffer],
+        outputs=[topic_input, output_box],
     )
     
     # Delete
