@@ -46,10 +46,13 @@ def explain_topic_stream(topic: str, history):
     radio_choices, radio_value = create_history_choices(new_history)
     delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)]
     
+    # Info message
+    info_msg = f"💬 {len(new_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+    
     print(f"   🔄 History display aggiornato con {len(new_history)} items")
     print(f"{'='*60}\n")
     
-    yield new_history, final_text, gr.update(choices=radio_choices), gr.update(choices=delete_choices)
+    yield new_history, final_text, gr.update(choices=radio_choices, info=info_msg), gr.update(choices=delete_choices)
 
 
 # -------------------------------
@@ -130,7 +133,15 @@ def initialize_history():
     # Delete dropdown: mantieni numeri per identificazione univoca
     delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(fresh_history)] if fresh_history else []
     
-    return fresh_history, gr.update(choices=radio_choices, value=radio_value), gr.update(choices=delete_choices), ""
+    # Info message dinamico
+    if len(fresh_history) == 0:
+        info_msg = "📭 Nessuna chat salvata"
+    elif len(fresh_history) == 1:
+        info_msg = "💬 1 chat disponibile - Seleziona una chat o una data per visualizzare"
+    else:
+        info_msg = f"💬 {len(fresh_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+    
+    return fresh_history, gr.update(choices=radio_choices, value=radio_value, info=info_msg), gr.update(choices=delete_choices), ""
 
 
 # -------------------------------
@@ -143,24 +154,61 @@ def search_in_history(search_query, full_history):
     if not search_query.strip():
         # Mostra tutta la history
         filtered = full_history
+        info_msg = f"💬 {len(full_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
     else:
         filtered = service.search_history(search_query, full_history)
+        if len(filtered) == 0:
+            info_msg = f"🔍 Nessun risultato per '{search_query}'"
+        else:
+            info_msg = f"🔍 {len(filtered)} risultati di {len(full_history)} chat - Seleziona per visualizzare"
     
     radio_choices, radio_value = create_history_choices(filtered)
-    return gr.update(choices=radio_choices, value=radio_value)
+    return gr.update(choices=radio_choices, value=radio_value, info=info_msg)
 
 
 # -------------------------------
-# Callback per selezione chat
+# Callback per selezione chat o data
 # -------------------------------
 def load_selected_chat(selection, history):
-    """Carica una chat dall'history quando selezionata"""
-    # Estrai topic dalla selezione
+    """Carica una chat dall'history quando selezionata, o tutte le chat di una data"""
+    
+    # CASO 1: È una data? Mostra tutte le chat di quel giorno
+    if selection and "📅" in selection:
+        # Estrai la data dal formato "📅 DD/MM/YYYY"
+        date_str = selection.replace("📅", "").strip()
+        print(f"📅 Data selezionata: '{date_str}' - caricamento chat del giorno...")
+        
+        # Raggruppa per data
+        grouped = service.group_by_date(history)
+        
+        # Cerca il gruppo corrispondente
+        for date_key, chats in grouped.items():
+            if chats[0]["date_label"] == date_str:
+                print(f"   Trovate {len(chats)} chat per {date_str}")
+                
+                # Crea un output combinato con tutte le chat del giorno
+                combined_output = f"📅 Chat del {date_str}\n"
+                combined_output += "=" * 60 + "\n\n"
+                
+                for i, chat in enumerate(chats, 1):
+                    combined_output += f"🔹 Chat {i}: {chat['topic']}\n"
+                    combined_output += "─" * 60 + "\n"
+                    combined_output += chat['explanation'] + "\n\n"
+                    if i < len(chats):
+                        combined_output += "\n"
+                
+                # Ritorna un topic descrittivo e l'output combinato
+                combined_topic = f"📅 {date_str} ({len(chats)} chat)"
+                return combined_topic, combined_output
+        
+        print(f"⚠️ Nessuna chat trovata per la data: '{date_str}'")
+        return gr.update(), gr.update()
+    
+    # CASO 2: È una chat singola
     topic_display = parse_topic_from_selection(selection)
     
     if not topic_display:
-        # Selezione non valida (probabilmente un header data)
-        print(f"⚠️ Header data selezionato (ignorato): '{selection}'")
+        print(f"⚠️ Selezione non valida: '{selection}'")
         return gr.update(), gr.update()
     
     # Cerca nella history per topic
@@ -175,12 +223,12 @@ def load_selected_chat(selection, history):
             # Match parziale (senza i ...)
             topic_prefix = topic_display[:-3]  # Rimuovi "..."
             if topic.startswith(topic_prefix):
-                print(f"✅ Chat caricata (match parziale): {topic[:50]}")
+                print(f"✅ Chat singola caricata (match parziale): {topic[:50]}")
                 return topic, explanation
         else:
             # Match esatto
             if topic == topic_display:
-                print(f"✅ Chat caricata: {topic[:50]}")
+                print(f"✅ Chat singola caricata: {topic[:50]}")
                 return topic, explanation
     
     # Se non trovato, prova un match case-insensitive
@@ -188,7 +236,7 @@ def load_selected_chat(selection, history):
     for item in history:
         topic = item[0]
         if topic.lower().startswith(topic_lower):
-            print(f"✅ Chat caricata (match case-insensitive): {topic[:50]}")
+            print(f"✅ Chat singola caricata (match case-insensitive): {topic[:50]}")
             return topic, item[1]
     
     print(f"⚠️ Chat non trovata per selezione: '{topic_display}'")
@@ -217,7 +265,13 @@ def delete_selected_chat(delete_selection, history, search_query):
             radio_choices, radio_value = create_history_choices(new_history)
             delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)] if new_history else []
             
-            return new_history, gr.update(choices=radio_choices, value=None), gr.update(choices=delete_choices, value=None), "", ""
+            # Info message
+            if len(new_history) == 0:
+                info_msg = "📭 Nessuna chat salvata"
+            else:
+                info_msg = f"💬 {len(new_history)} chat disponibili - Seleziona una chat o una data per visualizzare"
+            
+            return new_history, gr.update(choices=radio_choices, value=None, info=info_msg), gr.update(choices=delete_choices, value=None), "", ""
     except Exception as e:
         print(f"❌ Errore eliminazione: {e}")
     
