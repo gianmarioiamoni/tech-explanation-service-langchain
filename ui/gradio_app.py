@@ -79,31 +79,40 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                     scale=1,
                     interactive=False,
                 )
-                clear_button = gr.Button(
-                    "🔄 Clear",
-                    variant="secondary",
-                    scale=1,
-                )
-            
-            # Download section
-            with gr.Row():
-                download_format = gr.Dropdown(
-                    label="📥 Export Format",
-                    choices=["Markdown", "PDF", "Word"],
-                    value="Markdown",
-                    scale=2,
-                    interactive=False,
-                )
                 download_btn = gr.Button(
                     "📥 Download",
                     variant="secondary",
                     scale=1,
                     interactive=False,
                 )
+                clear_button = gr.Button(
+                    "🔄 Clear",
+                    variant="secondary",
+                    scale=1,
+                )
+            
+            # Download format submenu (expands when Download is clicked)
+            with gr.Accordion("📥 Select Format", open=False, visible=False) as download_accordion:
+                with gr.Row():
+                    download_md_btn = gr.Button(
+                        "📄 Markdown",
+                        variant="secondary",
+                        scale=1,
+                    )
+                    download_pdf_btn = gr.Button(
+                        "📕 PDF",
+                        variant="secondary",
+                        scale=1,
+                    )
+                    download_docx_btn = gr.Button(
+                        "📘 Word",
+                        variant="secondary",
+                        scale=1,
+                    )
             
             # File output for download (hidden, shows download link when ready)
             download_file = gr.File(
-                label="Download File",
+                label="📥 Download File",
                 visible=False,
             )
 
@@ -166,9 +175,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[history_dropdown, history_state],
         outputs=[topic_input, output_box],
     ).then(
-        fn=lambda text: (gr.update(interactive=bool(text)), gr.update(interactive=bool(text))),
+        fn=lambda text: gr.update(interactive=bool(text)),
         inputs=[output_box],
-        outputs=[download_format, download_btn],
+        outputs=[download_btn],
     )
     
     # Explain (save event references for stop functionality)
@@ -186,9 +195,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     click_disable = click_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True), gr.update(interactive=True)),
+        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
         inputs=None,
-        outputs=[stop_btn, download_format, download_btn],
+        outputs=[stop_btn, download_btn],
     )
 
     submit_enable = topic_input.submit(
@@ -204,9 +213,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     submit_disable = submit_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True), gr.update(interactive=True)),
+        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
         inputs=None,
-        outputs=[stop_btn, download_format, download_btn],
+        outputs=[stop_btn, download_btn],
     )
     
     # Stop button cancels only the streaming events (not enable/disable events)
@@ -217,22 +226,49 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         cancels=[click_stream, submit_stream],
     )
     
-    # Download (generate file and show download link)
+    # Download button toggles format submenu
     download_btn.click(
-        fn=download_chat,
-        inputs=[topic_input, output_box, download_format],
-        outputs=[download_file],
-    ).then(
-        fn=lambda file: gr.update(visible=bool(file)),
-        inputs=[download_file],
-        outputs=[download_file],
+        fn=lambda: (gr.update(visible=True, open=True), gr.update(visible=False, value=None)),
+        inputs=None,
+        outputs=[download_accordion, download_file],
     )
     
-    # Clear (also disable download and hide file)
+    # Download format buttons - each triggers download in specific format
+    download_md_btn.click(
+        fn=lambda topic, output: download_chat(topic, output, "Markdown"),
+        inputs=[topic_input, output_box],
+        outputs=[download_file],
+    ).then(
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        inputs=[download_file],
+        outputs=[download_file, download_accordion],
+    )
+    
+    download_pdf_btn.click(
+        fn=lambda topic, output: download_chat(topic, output, "PDF"),
+        inputs=[topic_input, output_box],
+        outputs=[download_file],
+    ).then(
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        inputs=[download_file],
+        outputs=[download_file, download_accordion],
+    )
+    
+    download_docx_btn.click(
+        fn=lambda topic, output: download_chat(topic, output, "Word"),
+        inputs=[topic_input, output_box],
+        outputs=[download_file],
+    ).then(
+        fn=lambda file: (gr.update(visible=bool(file)), gr.update(open=False)),
+        inputs=[download_file],
+        outputs=[download_file, download_accordion],
+    )
+    
+    # Clear (also disable download, hide accordion and file)
     clear_button.click(
-        fn=lambda: ("", "", gr.update(interactive=False), gr.update(interactive=False), gr.update(visible=False, value=None)),
+        fn=lambda: ("", "", gr.update(interactive=False), gr.update(visible=False, open=False), gr.update(visible=False, value=None)),
         inputs=None,
-        outputs=[topic_input, output_box, download_format, download_btn, download_file],
+        outputs=[topic_input, output_box, download_btn, download_accordion, download_file],
     )
     
     # Delete
