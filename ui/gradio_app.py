@@ -67,64 +67,76 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 autoscroll=True,
             )
             
-            # Custom JavaScript for robust autoscroll
+            # Custom JavaScript for robust autoscroll with polling
             # This ensures the output box always scrolls to bottom during streaming,
-            # even for very long content that exceeds the box height
+            # using a simple polling approach that works with Gradio's async updates
             gr.HTML("""
                 <script>
                 function setupAutoscroll() {
-                    // Find the output textbox by its elem_id
-                    const outputBox = document.getElementById('output_explanation');
-                    if (!outputBox) {
-                        setTimeout(setupAutoscroll, 100);
-                        return;
-                    }
+                    let lastScrollHeight = 0;
+                    let textarea = null;
+                    let attempts = 0;
+                    const maxAttempts = 50;
                     
-                    // Find the actual textarea element inside the Gradio component
-                    const textarea = outputBox.querySelector('textarea');
-                    if (!textarea) {
-                        setTimeout(setupAutoscroll, 100);
-                        return;
-                    }
-                    
-                    console.log('✅ Autoscroll setup complete for output_explanation');
-                    
-                    // Create a MutationObserver to watch for content changes
-                    const observer = new MutationObserver(() => {
-                        // Scroll to bottom whenever content changes
-                        textarea.scrollTop = textarea.scrollHeight;
-                    });
-                    
-                    // Also observe attribute changes (value changes)
-                    observer.observe(textarea, {
-                        childList: true,
-                        subtree: true,
-                        characterData: true,
-                        attributes: true,
-                        attributeFilter: ['value']
-                    });
-                    
-                    // Also listen to input events
-                    textarea.addEventListener('input', () => {
-                        textarea.scrollTop = textarea.scrollHeight;
-                    });
-                    
-                    // Force scroll on any value change
-                    const originalValueSetter = Object.getOwnPropertyDescriptor(
-                        HTMLTextAreaElement.prototype, 'value'
-                    ).set;
-                    
-                    Object.defineProperty(textarea, 'value', {
-                        set: function(newValue) {
-                            originalValueSetter.call(this, newValue);
-                            setTimeout(() => {
-                                this.scrollTop = this.scrollHeight;
-                            }, 10);
-                        },
-                        get: function() {
-                            return this.value;
+                    // Function to find and setup the textarea
+                    function findTextarea() {
+                        const outputBox = document.getElementById('output_explanation');
+                        if (outputBox) {
+                            textarea = outputBox.querySelector('textarea');
+                            if (textarea) {
+                                console.log('✅ Autoscroll: textarea found');
+                                return true;
+                            }
                         }
-                    });
+                        return false;
+                    }
+                    
+                    // Try to find the textarea with retries
+                    function trySetup() {
+                        if (findTextarea()) {
+                            startPolling();
+                        } else {
+                            attempts++;
+                            if (attempts < maxAttempts) {
+                                setTimeout(trySetup, 100);
+                            } else {
+                                console.warn('⚠️ Autoscroll: textarea not found after', maxAttempts, 'attempts');
+                            }
+                        }
+                    }
+                    
+                    // Start continuous polling for scroll
+                    function startPolling() {
+                        console.log('✅ Autoscroll: polling started');
+                        
+                        // Check every 100ms if content changed and scroll
+                        setInterval(() => {
+                            if (textarea && textarea.scrollHeight > lastScrollHeight) {
+                                lastScrollHeight = textarea.scrollHeight;
+                                textarea.scrollTop = textarea.scrollHeight;
+                            }
+                        }, 100);
+                        
+                        // Also force scroll on any detected change
+                        const observer = new MutationObserver(() => {
+                            if (textarea) {
+                                textarea.scrollTop = textarea.scrollHeight;
+                            }
+                        });
+                        
+                        // Observe the parent container for any changes
+                        const container = textarea.closest('.block');
+                        if (container) {
+                            observer.observe(container, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true
+                            });
+                        }
+                    }
+                    
+                    // Start the setup process
+                    trySetup();
                 }
                 
                 // Initialize when DOM is ready
