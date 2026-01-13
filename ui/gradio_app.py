@@ -59,13 +59,6 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 value="Aggregate into one chat",
             )
 
-            # Stop button for canceling generation
-            stop_btn = gr.Button(
-                "⏹️ Stop",
-                variant="stop",
-                visible=False,
-            )
-            
             output_box = gr.Textbox(
                 label="💡 Explanation",
                 lines=18,
@@ -77,12 +70,18 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 explain_button = gr.Button(
                     "✨ Explain",
                     variant="primary",
+                    scale=2,
+                )
+                stop_btn = gr.Button(
+                    "⏹️ Stop",
+                    variant="stop",
                     scale=1,
+                    interactive=False,
                 )
                 clear_button = gr.Button(
                     "🔄 Clear",
                     variant="secondary",
-                    scale=0,
+                    scale=1,
                 )
 
         with gr.Column(scale=1):
@@ -145,9 +144,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     # Explain (save event references for stop functionality)
-    # Show stop button when generation starts
+    # Enable stop button when generation starts, disable when done
     explain_click_event = explain_button.click(
-        fn=lambda: gr.update(visible=True),
+        fn=lambda: gr.update(interactive=True),
         inputs=None,
         outputs=[stop_btn],
     ).then(
@@ -155,13 +154,13 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     ).then(
-        fn=lambda: gr.update(visible=False),
+        fn=lambda: gr.update(interactive=False),
         inputs=None,
         outputs=[stop_btn],
     )
 
     explain_submit_event = topic_input.submit(
-        fn=lambda: gr.update(visible=True),
+        fn=lambda: gr.update(interactive=True),
         inputs=None,
         outputs=[stop_btn],
     ).then(
@@ -169,7 +168,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     ).then(
-        fn=lambda: gr.update(visible=False),
+        fn=lambda: gr.update(interactive=False),
         inputs=None,
         outputs=[stop_btn],
     )
