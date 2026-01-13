@@ -30,6 +30,7 @@ from ui.callbacks import (
     delete_selected_chat,
     search_in_history,
 )
+from ui.callbacks.download_callbacks import download_chat
 
 # -------------------------------
 # UI Layout and Components
@@ -83,6 +84,28 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                     variant="secondary",
                     scale=1,
                 )
+            
+            # Download section
+            with gr.Row():
+                download_format = gr.Dropdown(
+                    label="📥 Export Format",
+                    choices=["Markdown", "PDF", "Word"],
+                    value="Markdown",
+                    scale=2,
+                    interactive=False,
+                )
+                download_btn = gr.Button(
+                    "📥 Download",
+                    variant="secondary",
+                    scale=1,
+                    interactive=False,
+                )
+            
+            # File output for download (hidden, shows download link when ready)
+            download_file = gr.File(
+                label="Download File",
+                visible=False,
+            )
 
         with gr.Column(scale=1):
             gr.Markdown("### 📚 Chat History")
@@ -137,10 +160,15 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     # Selection of chat from the history
+    # Also enable download when chat is loaded
     history_dropdown.change(
         fn=load_selected_chat,
         inputs=[history_dropdown, history_state],
         outputs=[topic_input, output_box],
+    ).then(
+        fn=lambda text: (gr.update(interactive=bool(text)), gr.update(interactive=bool(text))),
+        inputs=[output_box],
+        outputs=[download_format, download_btn],
     )
     
     # Explain (save event references for stop functionality)
@@ -158,9 +186,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     click_disable = click_stream.then(
-        fn=lambda: gr.update(interactive=False),
+        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True), gr.update(interactive=True)),
         inputs=None,
-        outputs=[stop_btn],
+        outputs=[stop_btn, download_format, download_btn],
     )
 
     submit_enable = topic_input.submit(
@@ -176,9 +204,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
     
     submit_disable = submit_stream.then(
-        fn=lambda: gr.update(interactive=False),
+        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True), gr.update(interactive=True)),
         inputs=None,
-        outputs=[stop_btn],
+        outputs=[stop_btn, download_format, download_btn],
     )
     
     # Stop button cancels only the streaming events (not enable/disable events)
@@ -189,11 +217,22 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         cancels=[click_stream, submit_stream],
     )
     
-    # Clear
+    # Download (generate file and show download link)
+    download_btn.click(
+        fn=download_chat,
+        inputs=[topic_input, output_box, download_format],
+        outputs=[download_file],
+    ).then(
+        fn=lambda file: gr.update(visible=bool(file)),
+        inputs=[download_file],
+        outputs=[download_file],
+    )
+    
+    # Clear (also disable download and hide file)
     clear_button.click(
-        fn=lambda: ("", ""),
+        fn=lambda: ("", "", gr.update(interactive=False), gr.update(interactive=False), gr.update(visible=False, value=None)),
         inputs=None,
-        outputs=[topic_input, output_box],
+        outputs=[topic_input, output_box, download_format, download_btn, download_file],
     )
     
     # Delete
