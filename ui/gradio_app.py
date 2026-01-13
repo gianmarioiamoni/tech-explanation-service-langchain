@@ -22,6 +22,22 @@ from app.services.tech_explanation_service import TechExplanationService
 from datetime import datetime
 
 # -------------------------------
+# Constants for UI messages
+# -------------------------------
+MSG_NO_CHATS = "📭 No chats saved"
+MSG_ONE_CHAT = "💬 1 available chat - Open the dropdown to select a chat or a date"
+MSG_MULTIPLE_CHATS = "💬 {count} available chats - Open the dropdown to select a chat or a date"
+
+def get_history_info_message(history_count: int) -> str:
+    """Generate appropriate info message based on history count"""
+    if history_count == 0:
+        return MSG_NO_CHATS
+    elif history_count == 1:
+        return MSG_ONE_CHAT
+    else:
+        return MSG_MULTIPLE_CHATS.format(count=history_count)
+
+# -------------------------------
 # Inizializzazione servizio
 # -------------------------------
 service = TechExplanationService()
@@ -29,7 +45,7 @@ service = TechExplanationService()
 # -------------------------------
 # Callback streaming
 # -------------------------------
-def explain_topic_stream(topic: str, history):
+def explain_topic_stream(topic: str, history, history_mode: str):
     topic_clean = (topic or "").strip()
     if not topic_clean:
         yield history, "Please enter at least one technical topic.", gr.update(), gr.update()
@@ -40,28 +56,53 @@ def explain_topic_stream(topic: str, history):
 
     current_topic = None
     accumulated_raw = ""
+    current_topic_content = ""  # Buffer per il topic corrente in separate mode
+    aggregate_mode = history_mode == "Aggregate into one chat"
 
     for topic_name, chunk in service.explain_multiple_stream(topic_clean):
-        # New topic detected → reset buffer and show header
+        # New topic detected
         if topic_name != current_topic:
             current_topic = topic_name
-            accumulated_raw = f"{topic_name}:\n\n"
+            current_topic_content = ""  # Reset buffer per nuovo topic
+            
+            if aggregate_mode:
+                # Aggregate mode: ADD new topic to existing content
+                if accumulated_raw:  # If there's already content
+                    accumulated_raw += f"\n\n{'='*60}\n\n{topic_name}:\n\n"
+                else:  # First topic
+                    accumulated_raw = f"{topic_name}:\n\n"
+            else:
+                # Separate mode: RESET for each topic (show only current)
+                accumulated_raw = f"{topic_name}:\n\n"
 
-        accumulated_raw = accumulated_raw.split("\n\n", 1)[0] + "\n\n" + chunk
+        # Update chunk content
+        if aggregate_mode:
+            # Aggregate mode: append chunk to the end of all content
+            accumulated_raw += chunk
+        else:
+            # Separate mode: accumulate chunks for current topic only
+            current_topic_content += chunk
+            accumulated_raw = f"{current_topic}:\n\n{current_topic_content}"
+        
         yield history, accumulated_raw, gr.update(), gr.update()
 
     # Final sanitization
     final_text = service._sanitize_output(accumulated_raw)
 
-    # Save each topic separately in history
     topics = service.parse_topics(topic_clean)
-    for t in topics:
-        history = service.add_to_history(t, final_text, history)
+
+    if history_mode == "Aggregate into one chat":
+        # Single aggregated chat
+        history = service.add_to_history(topic_clean, final_text, history)
+    else:
+        # One chat per topic (current behavior)
+        for t in topics:
+            history = service.add_to_history(t, final_text, history)
 
     radio_choices, _ = create_history_choices(history)
     delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(history)]
 
-    info_msg = "💬 1 available chat - Open the dropdown to select a chat or a date" if len(history) == 1 else f"💬 {len(history)} available chats - Open the dropdown to select a chat or a date" if len(history) > 1
+    info_msg = get_history_info_message(len(history))
 
     print(f"✅ Multi-topic generation completed")
     print(f"{'='*60}\n")
@@ -84,7 +125,7 @@ def create_history_choices(history):
     # - Date as visual separators (special prefix to identify them)
     # - Chat indented under each date
     if not history:
-        return ["📭 No chats saved"], None
+        return [MSG_NO_CHATS], None
     
     # Group by date
     grouped = service.group_by_date(history)
@@ -147,12 +188,7 @@ def initialize_history():
     delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(fresh_history)] if fresh_history else []
     
     # Dynamic info message
-    if len(fresh_history) == 0:
-        info_msg = "📭 No chats saved"
-    elif len(fresh_history) == 1:
-        info_msg = "💬 1 available chat - Open the dropdown to select a chat or a date"
-    else:
-        info_msg = f"💬 {len(fresh_history)} available chats - Open the dropdown to select a chat or a date"
+    info_msg = get_history_info_message(len(fresh_history))
     
     return fresh_history, gr.update(choices=radio_choices, value=radio_value, info=info_msg), gr.update(choices=delete_choices), ""
 
@@ -167,7 +203,7 @@ def search_in_history(search_query, full_history):
     if not search_query.strip():
         # Show all the history
         filtered = full_history
-        info_msg = f"💬 {len(full_history)} available chats - Open the dropdown to select a chat or a date"
+        info_msg = get_history_info_message(len(full_history))
     else:
         filtered = service.search_history(search_query, full_history)
         if len(filtered) == 0:
@@ -279,10 +315,7 @@ def delete_selected_chat(delete_selection, history, search_query):
             delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)] if new_history else []
             
             # Info message
-            if len(new_history) == 0:
-                info_msg = "📭 No chats saved"
-            else:
-                info_msg = f"💬 {len(new_history)} available chats - Open the dropdown to select a chat or a date"
+            info_msg = get_history_info_message(len(new_history))
             
             return new_history, gr.update(choices=radio_choices, value=None, info=info_msg), gr.update(choices=delete_choices, value=None), "", ""
     except Exception as e:
@@ -308,6 +341,15 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 label="📝 Technical Topic",
                 placeholder="e.g., Python decorators, Docker networking, RAG architecture",
                 lines=1,
+            )
+
+            history_mode = gr.Radio(
+                label="Multi-topic behavior",
+                choices=[
+                    "Aggregate into one chat",
+                    "Save each topic as a separate chat"
+                ],
+                value="Aggregate into one chat",
             )
 
             output_box = gr.Textbox(
@@ -389,13 +431,13 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # Explain
     explain_button.click(
         fn=explain_topic_stream,
-        inputs=[topic_input, history_state],
+        inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     )
 
     topic_input.submit(
         fn=explain_topic_stream,
-        inputs=[topic_input, history_state],
+        inputs=[topic_input, history_state, history_mode],
         outputs=[history_state, output_box, history_dropdown, delete_dropdown],
     )
     
