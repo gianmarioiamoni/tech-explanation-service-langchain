@@ -61,7 +61,7 @@ def truncate(text: str, max_len: int) -> str:
 
 
 def create_history_choices(history):
-    """Crea le scelte per il radio button raggruppate per data"""
+    """Crea le scelte per il radio button con data inline per ogni chat"""
     if not history:
         return ["📭 Nessuna chat salvata"], None
     
@@ -71,38 +71,40 @@ def create_history_choices(history):
     choices = []
     
     for date_key, chats in grouped.items():
-        date_label = chats[0]["date_label"]
-        # Header data - con carattere speciale iniziale per identificarla
-        date_header = f"━━━ 📅 {date_label} ━━━"
-        choices.append(date_header)
-        
-        # Chat items sotto alla data - solo topic, no numeri
+        # Per ogni chat, includi la data abbreviata nel formato
         for chat in chats:
-            # Troncamento più lungo per leggibilità
-            topic_display = truncate(chat["topic"], 65)
-            # Formato: solo topic con indentazione visiva (4 spazi)
-            choices.append(f"    {topic_display}")
+            date_label = chat["date_label"]
+            # Estrai solo giorno/mese (es. "13/01" da "13/01/2026")
+            date_short = "/".join(date_label.split("/")[:2])  # "13/01"
+            
+            # Troncamento per lasciare spazio alla data
+            topic_display = truncate(chat["topic"], 55)
+            
+            # Formato: "DD/MM │ Topic"  (uso │ per separatore visivo)
+            choice_text = f"{date_short} │ {topic_display}"
+            choices.append(choice_text)
     
     return choices, None
 
 
 def parse_topic_from_selection(selection: str):
-    """Estrae il topic dalla selezione, rimuovendo l'indentazione
+    """Estrae il topic dalla selezione formato 'DD/MM │ Topic'
     
-    Returns il topic pulito, o None se è un header data
+    Returns il topic pulito, o None se selezione non valida
     """
     if not selection:
         return None
     
-    # Ignora headers data
-    if "━━━" in selection or "📅" in selection:
+    # Ignora messaggi speciali
+    if "📭" in selection or not "│" in selection:
         return None
     
-    # Rimuovi indentazione e eventuali "..."
-    topic = selection.strip()
+    # Split per separatore │ e prendi la parte dopo (il topic)
+    parts = selection.split("│")
+    if len(parts) != 2:
+        return None
     
-    # Se il topic è troncato (finisce con ...), cerca un match parziale
-    # altrimenti cerca un match esatto
+    topic = parts[1].strip()
     return topic
 
 
@@ -258,9 +260,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 lines=1,
             )
             
-            # History list (con raggruppamento per data)
+            # History list (con data inline per ogni chat)
             history_radio = gr.Radio(
-                label="Select a chat",
+                label="Previous chats (newest first)",
                 choices=["⏳ Loading..."],
                 value=None,
                 interactive=True,
