@@ -112,3 +112,6 @@ class TechExplanationService:
         history = history + [(topic, explanation)]
         self.save_history(history)
         return history
+
+
+    

@@ -12,7 +12,7 @@ from app.chains.tech_explanation_chain import tech_explanation_chain
 # Test: invoke returns valid string response
 # ------------------------------------------------------------------
 def test_chain_invoke_returns_string():
-    """Test that chain.invoke() returns a non-empty string."""
+    # Test that chain.invoke() returns a non-empty string.
     result = tech_explanation_chain.invoke({"topic": "REST API"})
     
     # Assert result is a string and has content
@@ -25,7 +25,7 @@ def test_chain_invoke_returns_string():
 # Test: streaming produces non-empty chunks
 # ------------------------------------------------------------------
 def test_chain_stream_yields():
-    """Test that chain.stream() yields valid string chunks."""
+    # Test that chain.stream() yields valid string chunks.
     streamed = list(tech_explanation_chain.stream({"topic": "Docker"}))
     
     # Assert we got chunks
