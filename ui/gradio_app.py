@@ -65,13 +65,8 @@ def explain_topic_stream(topic: str, history, history_mode: str):
         topic_contents[topic_name] = accumulated_text
 
         if aggregate_mode:
-            # Aggregate mode: rebuild entire output combining all topics in order
-            accumulated_raw = ""
-            for t in topics:
-                if t in topic_contents:
-                    if accumulated_raw:  # Add separator between topics
-                        accumulated_raw += f"\n\n{'='*60}\n\n"
-                    accumulated_raw += f"{t}:\n\n{topic_contents[t]}"
+            # Aggregate mode: use service method to combine topics
+            accumulated_raw = service.aggregate_topics_output(topics, topic_contents)
         else:
             # Separate mode: show only current topic
             accumulated_raw = f"{topic_name}:\n\n{accumulated_text}"
@@ -89,8 +84,8 @@ def explain_topic_stream(topic: str, history, history_mode: str):
         for t in topics:
             history = service.add_to_history(t, final_text, history)
 
-    radio_choices, _ = create_history_choices(history)
-    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(history)]
+    radio_choices, _ = service.create_history_choices(history)
+    delete_choices = service.create_delete_choices(history)
 
     info_msg = get_history_info_message(len(history))
 
@@ -98,70 +93,6 @@ def explain_topic_stream(topic: str, history, history_mode: str):
     print(f"{'='*60}\n")
 
     yield history, final_text, gr.update(choices=radio_choices, info=info_msg), gr.update(choices=delete_choices)
-
-
-# -------------------------------
-# Helper functions
-# -------------------------------
-def truncate(text: str, max_len: int) -> str:
-    # Truncate the text to max_len characters
-    return text[:max_len] + "..." if len(text) > max_len else text
-
-
-def create_history_choices(history):
-    # Create the choices for the dropdown grouped by date
-    
-    # Use a format that simulates optgroup HTML:
-    # - Date as visual separators (special prefix to identify them)
-    # - Chat indented under each date
-    if not history:
-        return [MSG_NO_CHATS], None
-    
-    # Group by date
-    grouped = service.group_by_date(history)
-    
-    choices = []
-    
-    for date_key, chats in grouped.items():
-        date_label = chats[0]["date_label"]
-        
-        # Header data - only calendar emoji as identifier
-        date_header = f"📅 {date_label}"
-        choices.append(date_header)
-        
-        # Chat items under the date - only indentation, no bullet points
-        for chat in chats:
-            topic_display = truncate(chat["topic"], 60)
-            # Only 2 spaces for visual indentation
-            choices.append(f"  {topic_display}")
-    
-    return choices, None
-
-
-def parse_topic_from_selection(selection: str):
-    # Extract the topic from the selection format '  Topic'
-    
-    # Returns the clean topic, or None if it is a header data or invalid selection
-   
-    if not selection:
-        return None
-    
-    # Ignore headers data (contain calendar emoji)
-    if "📅" in selection:
-        return None
-    
-    # Ignore special messages
-    if "📭" in selection:
-        return None
-    
-    # Remove initial spaces (indentation)
-    topic = selection.strip()
-    
-    # If empty after strip, it is not valid
-    if not topic:
-        return None
-    
-    return topic
 
 
 # -------------------------------
@@ -173,9 +104,8 @@ def initialize_history():
     fresh_history = service.load_history()
     print(f"   📚 History caricata: {len(fresh_history)} items")
     
-    radio_choices, radio_value = create_history_choices(fresh_history)
-    # Delete dropdown: keep numbers for unique identification
-    delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(fresh_history)] if fresh_history else []
+    radio_choices, radio_value = service.create_history_choices(fresh_history)
+    delete_choices = service.create_delete_choices(fresh_history)
     
     # Dynamic info message
     info_msg = get_history_info_message(len(fresh_history))
@@ -201,82 +131,46 @@ def search_in_history(search_query, full_history):
         else:
             info_msg = f"🔍 {len(filtered)} results for {len(full_history)} chats - Open the dropdown to select a chat or a date"
     
-    radio_choices, radio_value = create_history_choices(filtered)
+    radio_choices, radio_value = service.create_history_choices(filtered)
     return gr.update(choices=radio_choices, value=radio_value, info=info_msg)
 
 
 # -------------------------------
-# Callback for selected chat or data
+# Callback for selected chat or date
 # -------------------------------
 def load_selected_chat(selection, history):
     # Load a chat from the history when selected, or all the chats of a date
     
-    # CASO 1: È una data? Mostra tutte le chat di quel giorno
+    # CASE 1: Is it a date? Show all chats for that day
     if selection and "📅" in selection:
         # Extract the date from the format "📅 DD/MM/YYYY"
         date_str = selection.replace("📅", "").strip()
         print(f"📅 Data selezionata: '{date_str}' - caricamento chat del giorno...")
         
-        # Group by date
-        grouped = service.group_by_date(history)
+        chats = service.get_chats_by_date(date_str, history)
         
-        # Search for the corresponding group
-        for date_key, chats in grouped.items():
-            if chats[0]["date_label"] == date_str:
-                print(f"   Trovate {len(chats)} chat per {date_str}")
-                
-                # Create a combined output with all the chats of the day
-                combined_output = f"📅 Chat del {date_str}\n"
-                combined_output += "=" * 60 + "\n\n"
-                
-                for i, chat in enumerate(chats, 1):
-                    combined_output += f"🔹 Chat {i}: {chat['topic']}\n"
-                    combined_output += "─" * 60 + "\n"
-                    combined_output += chat['explanation'] + "\n\n"
-                    if i < len(chats):
-                        combined_output += "\n"
-                
-                # Return a descriptive topic and the combined output
-                combined_topic = f"📅 {date_str} ({len(chats)} chat)"
-                return combined_topic, combined_output
+        if chats:
+            print(f"   Trovate {len(chats)} chat per {date_str}")
+            combined_topic, combined_output = service.format_chats_for_date(date_str, chats)
+            return combined_topic, combined_output
         
         print(f"⚠️ Nessuna chat trovata per la data: '{date_str}'")
         return gr.update(), gr.update()
     
-    # CASE 2: It is a single chat
-    topic_display = parse_topic_from_selection(selection)
+    # CASE 2: It's a single chat
+    topic_display = service.parse_topic_from_selection(selection)
     
     if not topic_display:
         print(f"⚠️ Selezione non valida: '{selection}'")
         return gr.update(), gr.update()
     
-    # Search in the history for topic
-    # If the topic is truncated (ends with ...), search for prefix
-    is_truncated = topic_display.endswith("...")
+    # Find chat in history
+    result = service.find_chat_by_topic(topic_display, history)
     
-    for item in history:
-        topic = item[0]
-        explanation = item[1]
-        
-        if is_truncated:
-            # Match partial (without the i...)
-            topic_prefix = topic_display[:-3]  # Rimuovi "..."
-            if topic.startswith(topic_prefix):
-                print(f"✅ Chat singola caricata (match parziale): {topic[:50]}")
-                return topic, explanation
-        else:
-            # Exact match
-            if topic == topic_display:
-                print(f"✅ Chat singola caricata: {topic[:50]}")
-                return topic, explanation
-    
-    # If not found, try a case-insensitive match
-    topic_lower = topic_display.lower().replace("...", "")
-    for item in history:
-        topic = item[0]
-        if topic.lower().startswith(topic_lower):
-            print(f"✅ Chat singola caricata (match case-insensitive): {topic[:50]}")
-            return topic, item[1]
+    if result:
+        topic, explanation = result
+        print(f"✅ Chat singola caricata: {topic[:50]}")
+        return topic, explanation
     
     print(f"⚠️ Chat non trovata per selezione: '{topic_display}'")
     return gr.update(), gr.update()
@@ -301,8 +195,8 @@ def delete_selected_chat(delete_selection, history, search_query):
             new_history = service.delete_from_history(idx, history)
             
             # Components update
-            radio_choices, radio_value = create_history_choices(new_history)
-            delete_choices = [f"{i}. {truncate(h[0], 50)}" for i, h in enumerate(new_history)] if new_history else []
+            radio_choices, radio_value = service.create_history_choices(new_history)
+            delete_choices = service.create_delete_choices(new_history)
             
             # Info message
             info_msg = get_history_info_message(len(new_history))

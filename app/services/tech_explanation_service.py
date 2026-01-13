@@ -207,6 +207,71 @@ class TechExplanationService:
         return sorted_grouped
 
     # -------------------------------
+    # UI Helper Methods
+    # -------------------------------
+    @staticmethod
+    def truncate(text: str, max_len: int) -> str:
+        """Truncate text to max_len characters, adding '...' if needed"""
+        return text[:max_len] + "..." if len(text) > max_len else text
+    
+    @staticmethod
+    def parse_topic_from_selection(selection: str) -> Optional[str]:
+        """
+        Extract the topic from a dropdown selection.
+        Returns None if it's a date header or invalid selection.
+        """
+        if not selection:
+            return None
+        
+        # Ignore date headers (contain calendar emoji)
+        if "📅" in selection:
+            return None
+        
+        # Ignore special messages (no chats saved)
+        if "📭" in selection:
+            return None
+        
+        # Remove initial spaces (indentation from dropdown formatting)
+        topic = selection.strip()
+        
+        # If empty after strip, it's not valid
+        if not topic:
+            return None
+        
+        return topic
+    
+    def create_history_choices(self, history, max_topic_len: int = 60) -> Tuple[List[str], Optional[str]]:
+        """
+        Create formatted choices for the history dropdown, grouped by date.
+        Returns (choices_list, default_value).
+        """
+        if not history:
+            return ["📭 No chats saved"], None
+        
+        # Group by date
+        grouped = self.group_by_date(history)
+        
+        choices = []
+        
+        for date_key, chats in grouped.items():
+            date_label = chats[0]["date_label"]
+            
+            # Date header with calendar emoji as identifier
+            date_header = f"📅 {date_label}"
+            choices.append(date_header)
+            
+            # Chat items under the date - indented with 2 spaces
+            for chat in chats:
+                topic_display = self.truncate(chat["topic"], max_topic_len)
+                choices.append(f"  {topic_display}")
+        
+        return choices, None
+    
+    def create_delete_choices(self, history, max_topic_len: int = 50) -> List[str]:
+        """Create formatted choices for the delete dropdown with numeric IDs"""
+        return [f"{i}. {self.truncate(h[0], max_topic_len)}" for i, h in enumerate(history)] if history else []
+    
+    # -------------------------------
     # Multi-topic parsing
     # -------------------------------
     def parse_topics(self, raw_input: str) -> List[str]:
@@ -229,4 +294,82 @@ class TechExplanationService:
             for chunk in tech_explanation_chain.stream({"topic": topic}):
                 accumulated += chunk
                 yield topic, accumulated
+    
+    # -------------------------------
+    # History Loading and Aggregation
+    # -------------------------------
+    def find_chat_by_topic(self, topic_display: str, history) -> Optional[Tuple[str, str]]:
+        """
+        Find a chat in history by topic (supports truncated topics ending with '...').
+        Returns (topic, explanation) if found, None otherwise.
+        """
+        is_truncated = topic_display.endswith("...")
+        
+        for item in history:
+            topic = item[0]
+            explanation = item[1]
+            
+            if is_truncated:
+                # Match by prefix (without the '...')
+                topic_prefix = topic_display[:-3]
+                if topic.startswith(topic_prefix):
+                    return topic, explanation
+            else:
+                # Exact match
+                if topic == topic_display:
+                    return topic, explanation
+        
+        # Try case-insensitive match as fallback
+        topic_lower = topic_display.lower().replace("...", "")
+        for item in history:
+            topic = item[0]
+            if topic.lower().startswith(topic_lower):
+                return topic, item[1]
+        
+        return None
+    
+    def get_chats_by_date(self, date_str: str, history) -> Optional[List[dict]]:
+        """
+        Get all chats for a specific date.
+        date_str format: "DD/MM/YYYY"
+        Returns list of chat dicts or None if not found.
+        """
+        grouped = self.group_by_date(history)
+        
+        for date_key, chats in grouped.items():
+            if chats[0]["date_label"] == date_str:
+                return chats
+        
+        return None
+    
+    def format_chats_for_date(self, date_str: str, chats: List[dict]) -> Tuple[str, str]:
+        """
+        Format multiple chats for display when a date is selected.
+        Returns (combined_topic, combined_output).
+        """
+        combined_output = f"📅 Chat del {date_str}\n"
+        combined_output += "=" * 60 + "\n\n"
+        
+        for i, chat in enumerate(chats, 1):
+            combined_output += f"🔹 Chat {i}: {chat['topic']}\n"
+            combined_output += "─" * 60 + "\n"
+            combined_output += chat['explanation'] + "\n\n"
+            if i < len(chats):
+                combined_output += "\n"
+        
+        combined_topic = f"📅 {date_str} ({len(chats)} chat)"
+        return combined_topic, combined_output
+    
+    def aggregate_topics_output(self, topics: List[str], topic_contents: dict) -> str:
+        """
+        Aggregate multiple topics into a single output with separators.
+        Used for aggregate mode in streaming.
+        """
+        accumulated = ""
+        for t in topics:
+            if t in topic_contents:
+                if accumulated:  # Add separator between topics
+                    accumulated += f"\n\n{'='*60}\n\n"
+                accumulated += f"{t}:\n\n{topic_contents[t]}"
+        return accumulated
 
