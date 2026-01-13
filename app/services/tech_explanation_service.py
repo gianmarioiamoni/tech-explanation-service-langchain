@@ -195,6 +195,15 @@ class TechExplanationService:
         
         # Ordina per data (più recente prima)
         sorted_grouped = dict(sorted(grouped.items(), reverse=True))
+        
+        # Ordina le chat all'interno di ogni data per timestamp (newest first)
+        for date_key in sorted_grouped:
+            sorted_grouped[date_key] = sorted(
+                sorted_grouped[date_key],
+                key=lambda x: x["timestamp"],
+                reverse=True
+            )
+        
         return sorted_grouped
 
     # -------------------------------
