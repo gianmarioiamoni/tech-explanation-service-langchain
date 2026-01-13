@@ -356,6 +356,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 )
                 clear_button = gr.Button(
                     "🔄 Clear",
+                    variant="secondary",
                     scale=0,
                 )
 
