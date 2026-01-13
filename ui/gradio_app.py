@@ -78,44 +78,43 @@ def create_history_choices(history):
     for date_key, chats in grouped.items():
         date_label = chats[0]["date_label"]
         
-        # Header data - usa un prefisso per identificarlo come non-selezionabile
-        # Lo identificheremo con [DATE] all'inizio
-        date_header = f"[DATE]📅 {date_label}"
+        # Header data - solo emoji calendario come identificatore
+        date_header = f"📅 {date_label}"
         choices.append(date_header)
         
-        # Chat items sotto la data
+        # Chat items sotto la data - solo indentazione, no bullet points
         for chat in chats:
             topic_display = truncate(chat["topic"], 60)
-            # Usa caratteri Unicode per l'indentazione visiva
-            # ├─ per items intermedi, └─ per ultimo item del gruppo
-            choices.append(f"  • {topic_display}")
+            # Solo 2 spazi per indentazione visiva
+            choices.append(f"  {topic_display}")
     
     return choices, None
 
 
 def parse_topic_from_selection(selection: str):
-    """Estrae il topic dalla selezione formato '  • Topic'
+    """Estrae il topic dalla selezione formato '  Topic'
     
     Returns il topic pulito, o None se è un header data o selezione non valida
     """
     if not selection:
         return None
     
-    # Ignora headers data (iniziano con [DATE])
-    if selection.startswith("[DATE]") or "📅" in selection:
+    # Ignora headers data (contengono emoji calendario)
+    if "📅" in selection:
         return None
     
     # Ignora messaggi speciali
     if "📭" in selection:
         return None
     
-    # Rimuovi il bullet point e spazi
-    if "•" in selection:
-        topic = selection.split("•", 1)[1].strip()
-        return topic
+    # Rimuovi spazi iniziali (indentazione)
+    topic = selection.strip()
     
-    # Fallback: usa la selezione diretta
-    return selection.strip()
+    # Se vuoto dopo lo strip, non è valido
+    if not topic:
+        return None
+    
+    return topic
 
 
 # -------------------------------
