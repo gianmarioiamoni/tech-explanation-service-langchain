@@ -63,6 +63,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 label="💡 Explanation",
                 lines=18,
                 interactive=False,
+                elem_id="output_explanation",
+                autoscroll=True,
             )
 
             with gr.Row():
