@@ -63,7 +63,6 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 label="💡 Explanation",
                 lines=18,
                 interactive=False,
-                elem_id="output_explanation",
                 autoscroll=True,
             )
 
@@ -168,24 +167,4 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
 
 
 if __name__ == "__main__":
-    import os
-    
-    # Get absolute path to autoscroll.js
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    js_path = os.path.join(current_dir, "static", "autoscroll.js")
-    
-    # Read JavaScript file
-    with open(js_path, 'r') as f:
-        autoscroll_js = f.read()
-    
-    demo.launch(
-        css="""
-            #output_explanation textarea {
-                scroll-behavior: smooth !important;
-            }
-            #output_explanation {
-                height: auto !important;
-            }
-        """,
-        head=f"<script>{autoscroll_js}</script>"
-    )
+    demo.launch()
