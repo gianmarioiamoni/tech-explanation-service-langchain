@@ -20,21 +20,23 @@ def explain_topic_stream(topic: str, history):
         yield history, "Please enter a technical topic.", gr.update()
         return
 
-    accumulated = ""
-
+    # Stream the output progressively
+    final_text = ""
     for chunk in service.explain_stream(topic_clean):
-        accumulated = chunk
-        yield history, accumulated, gr.update()
+        final_text = chunk
+        # Yield only the accumulated text, don't touch history/dropdown yet
+        yield history, chunk, gr.update()
 
-    # Persist history
-    history = service.add_to_history(topic_clean, accumulated, history)
+    # After streaming completes, persist history
+    history = service.add_to_history(topic_clean, final_text, history)
 
-    # Update dropdown choices safely
+    # Update dropdown with new topics
     topics = [t for t, _ in history]
 
+    # Final yield with updated history and dropdown
     yield (
         history,
-        accumulated,
+        final_text,
         gr.update(choices=topics, value=topic_clean),
     )
 
