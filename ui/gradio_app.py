@@ -77,72 +77,39 @@ with gr.Blocks(
                 autoscroll=True,
             )
             
-            # Debug and autoscroll script
+            # Simple test to verify gr.HTML works
             gr.HTML("""
+                <div id="test-html-works" style="display:none;">HTML LOADED</div>
                 <script>
-                console.log('=== AUTOSCROLL DEBUG START ===');
-                
-                // Wait for page to fully load
-                setTimeout(function() {
-                    console.log('1️⃣ Checking if elem_id is applied...');
-                    const elem = document.getElementById('output_explanation');
-                    console.log('   Result:', elem ? '✅ FOUND' : '❌ NOT FOUND');
+                    // Test 1: Basic console log
+                    console.log('🧪 TEST: Script is executing!');
                     
-                    if (elem) {
-                        console.log('   Element:', elem);
-                        console.log('   Element tagName:', elem.tagName);
-                        console.log('   Element classes:', elem.className);
+                    // Test 2: Alert to verify JavaScript works
+                    setTimeout(() => {
+                        console.log('🧪 TEST: After 1 second delay');
                         
-                        console.log('2️⃣ Searching for textarea...');
-                        const textarea = elem.querySelector('textarea');
-                        console.log('   Result:', textarea ? '✅ FOUND' : '❌ NOT FOUND');
-                        
-                        if (textarea) {
-                            console.log('   Textarea:', textarea);
-                            console.log('   Initial scrollHeight:', textarea.scrollHeight);
-                            console.log('   Initial scrollTop:', textarea.scrollTop);
-                            
-                            console.log('3️⃣ Starting autoscroll polling (every 50ms)...');
-                            let pollCount = 0;
-                            setInterval(function() {
-                                const currentScrollHeight = textarea.scrollHeight;
-                                const currentScrollTop = textarea.scrollTop;
-                                
-                                // Always scroll to bottom
-                                textarea.scrollTop = textarea.scrollHeight;
-                                
-                                // Log every 100 polls (every 5 seconds)
-                                pollCount++;
-                                if (pollCount % 100 === 0) {
-                                    console.log(`   Poll #${pollCount}: scrollHeight=${currentScrollHeight}, scrollTop=${currentScrollTop} -> ${textarea.scrollTop}`);
-                                }
-                            }, 50);
-                            
-                            console.log('✅ Autoscroll active!');
-                        } else {
-                            console.error('❌ TEXTAREA NOT FOUND');
-                            console.log('   Available children:', elem.children);
-                            console.log('   Trying to find ANY textarea...');
-                            const anyTextarea = document.querySelector('textarea');
-                            if (anyTextarea) {
-                                console.log('   Found a textarea elsewhere:', anyTextarea);
-                                console.log('   Parent:', anyTextarea.parentElement);
-                            }
-                        }
-                    } else {
-                        console.error('❌ ELEMENT WITH ID output_explanation NOT FOUND');
-                        console.log('   Checking all elements with gradio classes...');
+                        // Test 3: Try to find the textarea by any means
+                        console.log('🔍 Searching for textareas in page...');
                         const allTextareas = document.querySelectorAll('textarea');
-                        console.log('   Total textareas found:', allTextareas.length);
-                        allTextareas.forEach((ta, i) => {
-                            console.log(`   Textarea ${i}:`, ta);
-                            console.log(`     Parent:`, ta.parentElement);
-                            console.log(`     Parent ID:`, ta.parentElement?.id);
+                        console.log('📊 Total textareas found:', allTextareas.length);
+                        
+                        allTextareas.forEach((ta, index) => {
+                            const label = ta.closest('label')?.querySelector('.label-text')?.textContent || 'No label';
+                            console.log(`Textarea ${index}: Label="${label}"`, ta);
+                            
+                            // If this is the explanation box (by label), set up autoscroll
+                            if (label.includes('Explanation') || label.includes('💡')) {
+                                console.log('✅ FOUND explanation textarea!');
+                                console.log('   Setting up autoscroll...');
+                                
+                                setInterval(() => {
+                                    ta.scrollTop = ta.scrollHeight;
+                                }, 50);
+                                
+                                console.log('✅ Autoscroll ACTIVE for explanation textarea');
+                            }
                         });
-                    }
-                }, 2000); // Wait 2 seconds instead of 1
-                
-                console.log('=== AUTOSCROLL DEBUG END ===');
+                    }, 2000);
                 </script>
             """)
 
