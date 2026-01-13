@@ -76,42 +76,6 @@ with gr.Blocks(
                 elem_id="output_explanation",
                 autoscroll=True,
             )
-            
-            # Simple test to verify gr.HTML works
-            gr.HTML("""
-                <div id="test-html-works" style="display:none;">HTML LOADED</div>
-                <script>
-                    // Test 1: Basic console log
-                    console.log('🧪 TEST: Script is executing!');
-                    
-                    // Test 2: Alert to verify JavaScript works
-                    setTimeout(() => {
-                        console.log('🧪 TEST: After 1 second delay');
-                        
-                        // Test 3: Try to find the textarea by any means
-                        console.log('🔍 Searching for textareas in page...');
-                        const allTextareas = document.querySelectorAll('textarea');
-                        console.log('📊 Total textareas found:', allTextareas.length);
-                        
-                        allTextareas.forEach((ta, index) => {
-                            const label = ta.closest('label')?.querySelector('.label-text')?.textContent || 'No label';
-                            console.log(`Textarea ${index}: Label="${label}"`, ta);
-                            
-                            // If this is the explanation box (by label), set up autoscroll
-                            if (label.includes('Explanation') || label.includes('💡')) {
-                                console.log('✅ FOUND explanation textarea!');
-                                console.log('   Setting up autoscroll...');
-                                
-                                setInterval(() => {
-                                    ta.scrollTop = ta.scrollHeight;
-                                }, 50);
-                                
-                                console.log('✅ Autoscroll ACTIVE for explanation textarea');
-                            }
-                        });
-                    }, 2000);
-                </script>
-            """)
 
             with gr.Row():
                 explain_button = gr.Button(
@@ -210,6 +174,40 @@ with gr.Blocks(
         inputs=[delete_dropdown, history_state, search_box],
         outputs=[history_state, history_dropdown, delete_dropdown, topic_input, output_box],
     )
+    
+    # -------------------------------
+    # Autoscroll Script (positioned at end of layout)
+    # -------------------------------
+    gr.HTML("""
+        <script>
+            console.log('🧪 AUTOSCROLL: Script loaded');
+            
+            setTimeout(() => {
+                console.log('🔍 AUTOSCROLL: Searching for textareas...');
+                const allTextareas = document.querySelectorAll('textarea');
+                console.log('📊 AUTOSCROLL: Found', allTextareas.length, 'textareas');
+                
+                allTextareas.forEach((ta, index) => {
+                    const parentLabel = ta.closest('label');
+                    const labelText = parentLabel?.textContent || 'No label';
+                    console.log(`   Textarea ${index}:`, labelText.substring(0, 50));
+                    
+                    // Find the explanation textarea by its label
+                    if (labelText.includes('Explanation') || labelText.includes('💡')) {
+                        console.log('   ✅ This is the explanation textarea!');
+                        console.log('   📐 ScrollHeight:', ta.scrollHeight, 'ScrollTop:', ta.scrollTop);
+                        
+                        // Setup aggressive autoscroll
+                        setInterval(() => {
+                            ta.scrollTop = ta.scrollHeight;
+                        }, 50);
+                        
+                        console.log('   ✅ AUTOSCROLL ACTIVE (polling every 50ms)');
+                    }
+                });
+            }, 2000);
+        </script>
+    """)
 
 
 if __name__ == "__main__":
