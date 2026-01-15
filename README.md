@@ -485,7 +485,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 👤 Author
 
-**Your Name**
+**Gianmario Iamoni**
 - Portfolio Project demonstrating:
   - LangChain LCEL best practices
   - Production-ready RAG implementation

@@ -28,3 +28,8 @@ __pycache__/
 # Coverage
 .coverage
 htmlcov/
+
+# Vector Database (local only - regenerate per environment)
+chroma_db/
+*.sqlite3
+*.parquet
