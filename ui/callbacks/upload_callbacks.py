@@ -4,7 +4,7 @@
 #
 # Responsibilities:
 # - Handle file uploads from the UI
-# - Process supported file types (PDF, TXT, DOCX)
+# - Process supported file types (PDF, TXT, MD, DOCX)
 # - Update RAGService index for context-aware responses
 # - Return status messages to the UI
 
@@ -18,7 +18,7 @@ from app.services.rag.rag_service import RAGService
 rag_service = RAGService()
 
 # Supported file types
-SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".docx"]
+SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".md", ".docx"]
 
 def upload_documents(files: List[str], uploaded_state: List[str]) -> Tuple[List[str], str]:
     # Handle uploaded files and update RAG index

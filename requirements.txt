@@ -10,6 +10,9 @@ langchain-chroma>=1.1.0,<2.0
 chromadb>=1.4.0,<2.0
 pypdf>=3.0,<5.0
 docx2txt>=0.8,<1.0
+unstructured>=0.10,<1.0
+markdown>=3.4,<4.0
+aiofiles>=22.0,<25.0  # Required by gradio 6.3.0
 
 # UI - Pin exact compatible versions for HF Spaces
 gradio==6.3.0

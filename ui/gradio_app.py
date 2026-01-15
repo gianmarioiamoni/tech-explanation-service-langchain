@@ -53,7 +53,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
             with gr.Accordion("📚 Upload Documents for Context-Aware Answers (RAG)", open=False):
                 rag_file_upload = gr.File(
                     label="📂 Select Files",
-                    file_types=[".pdf", ".txt", ".docx"],
+                    file_types=[".pdf", ".txt", ".md", ".docx"],
                     file_count="multiple",
                     type="filepath",
                 )

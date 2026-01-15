@@ -15,7 +15,12 @@ from langchain_core.documents import Document
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter, MarkdownHeaderTextSplitter
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_community.document_loaders import (
+    PyPDFLoader, 
+    TextLoader, 
+    UnstructuredMarkdownLoader,
+    Docx2txtLoader
+)
 import os
 import shutil
 
@@ -45,7 +50,7 @@ class RAGIndexer:
         # Load documents from given file paths
         #
         # Args:
-        #     paths: list of file paths (pdf, txt, md)
+        #     paths: list of file paths (pdf, txt, md, docx)
         #
         # Returns:
         #     List of Document objects
@@ -53,10 +58,17 @@ class RAGIndexer:
         docs = []
         for path in paths:
             ext = os.path.splitext(path)[1].lower()
+            
+            # Select appropriate loader based on file extension
             if ext == ".pdf":
                 loader = PyPDFLoader(path)
-            else:
+            elif ext == ".md":
+                loader = UnstructuredMarkdownLoader(path)
+            elif ext == ".docx":
+                loader = Docx2txtLoader(path)
+            else:  # .txt and other text formats
                 loader = TextLoader(path)
+            
             docs.extend(loader.load())
         return docs
 
