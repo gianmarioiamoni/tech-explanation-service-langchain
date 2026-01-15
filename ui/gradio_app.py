@@ -3,14 +3,14 @@
 # Gradio UI for the Tech Explanation Service
 #
 # Responsibilities:
-# - Define the Gradio UI layout and components
-# - Wire up event handlers to callbacks
+# - Compose UI components from modular sections
+# - Wire events using event modules
 # - Launch the Gradio application
 #
-# Note: Business logic and callbacks are in separate modules:
-# - app/services/tech_explanation_service.py (business logic)
-# - ui/callbacks/ (Gradio event callbacks)
-# - ui/utils/ (UI utilities and constants)
+# Note: UI components are in ui/components/
+#       Event wiring is in ui/events/
+#       Business logic is in app/services/
+#       Callbacks are in ui/callbacks/
 
 import sys
 from pathlib import Path
@@ -22,357 +22,142 @@ if str(project_root) not in sys.path:
 
 import gradio as gr
 
-# Import callbacks
-from ui.callbacks import (
-    explain_topic_stream,
-    initialize_history,
-    load_selected_chat,
-    delete_selected_chat,
-    clear_all_chats,
-    search_in_history,
+# Import UI component factories
+from ui.components import (
+    create_shared_states,
+    create_rag_section,
+    create_topic_section,
+    create_buttons_section,
+    create_history_section,
 )
-from ui.callbacks.download_callbacks import download_chat
-from ui.callbacks.upload_callbacks import upload_documents, clear_rag_index  # RAG callbacks
-from ui.callbacks.rag_callbacks import (
-    initialize_chroma_vectorstore,
-    initialize_rag_registry,
-)  # RAG initialization
+
+# Import event wiring functions
+from ui.events import (
+    wire_initialization_events,
+    wire_rag_events,
+    wire_explanation_events,
+    wire_history_events,
+    wire_download_events,
+)
 
 # -------------------------------
-# UI Layout and Components
+# UI Composition
 # -------------------------------
 with gr.Blocks(title="Tech Explanation Service") as demo:
+    # Header
     gr.Markdown(
-        "# 🎓 Tech Explanation Service\nEnter one or more technical topics (separated by commas) \nand receive a clear and structured explanation."
+        "# 🎓 Tech Explanation Service\n"
+        "Enter one or more technical topics (separated by commas) \n"
+        "and receive a clear and structured explanation."
     )
-
-    # State
-    history_state = gr.State([])
-    rag_uploaded_state = gr.State([])  # Track uploaded RAG documents
-
+    
+    # -------------------------------
+    # Create States
+    # -------------------------------
+    history_state, rag_uploaded_state = create_shared_states()
+    
+    # -------------------------------
+    # Layout
+    # -------------------------------
     with gr.Row():
+        # Left Column - Main Interaction
         with gr.Column(scale=2):
-            # -------------------------------
-            # RAG Document Upload (Collapsible)
-            # -------------------------------
-            with gr.Accordion("📚 Upload Documents for Context-Aware Answers (RAG)", open=False):
-                rag_file_upload = gr.File(
-                    label="📂 Select Files",
-                    file_types=[".pdf", ".txt", ".md", ".docx"],
-                    file_count="multiple",
-                    type="filepath",
-                )
-                with gr.Row():
-                    rag_clear_btn = gr.Button(
-                        "🗑️ Clear All Documents",
-                        variant="secondary",
-                        scale=1,
-                    )
-
-            # Status always visible
-            rag_status_box = gr.Textbox(
-                label="📄 Uploaded Documents Status",
-                lines=2,
-                interactive=False,
-                value="No documents uploaded.",
-            )
-
-            # -------------------------------
-            # Topic input and options
-            # -------------------------------
-            topic_input = gr.Textbox(
-                label="📝 Technical Topic",
-                placeholder="e.g., Python decorators, Docker networking, RAG architecture",
-                lines=1,
-            )
-
-            history_mode = gr.Radio(
-                label="Multi-topic behavior",
-                choices=[
-                    "Aggregate into one chat",
-                    "Save each topic as a separate chat"
-                ],
-                value="Aggregate into one chat",
-            )
-
-            output_box = gr.Textbox(
-                label="💡 Explanation",
-                lines=18,
-                interactive=False,
-                autoscroll=True,
-            )
-
-            # -------------------------------
-            # Buttons row
-            # -------------------------------
-            with gr.Row():
-                explain_button = gr.Button(
-                    "✨ Explain",
-                    variant="primary",
-                    scale=2,
-                )
-                stop_btn = gr.Button(
-                    "⏹️ Stop",
-                    variant="stop",
-                    scale=1,
-                    interactive=False,
-                )
-                download_btn = gr.Button(
-                    "📥 Download",
-                    variant="huggingface",
-                    scale=1,
-                    interactive=False,
-                )
-                clear_button = gr.Button(
-                    "🔄 Clear",
-                    variant="secondary",
-                    scale=1,
-                )
-
-            # -------------------------------
-            # Download submenu
-            # -------------------------------
-            with gr.Accordion("📥 Select Format", open=True, visible=False) as download_accordion:
-                with gr.Row():
-                    download_md_btn = gr.Button(
-                        "📄 Markdown",
-                        variant="secondary",
-                        scale=1,
-                    )
-                    download_pdf_btn = gr.Button(
-                        "📕 PDF",
-                        variant="secondary",
-                        scale=1,
-                    )
-                    download_docx_btn = gr.Button(
-                        "📘 Word",
-                        variant="secondary",
-                        scale=1,
-                    )
-
-            download_file = gr.File(
-                label="📥 Download File",
-                visible=False,
-                interactive=False,
-            )
-
-        # -------------------------------
-        # Chat History Column
-        # -------------------------------
+            # RAG Upload Section
+            rag_file_upload, rag_clear_btn, rag_status_box = create_rag_section()
+            
+            # Topic Input Section
+            topic_input, history_mode, output_box = create_topic_section()
+            
+            # Action Buttons Section
+            (
+                explain_btn,
+                stop_btn,
+                download_btn,
+                clear_btn,
+                download_accordion,
+                download_md_btn,
+                download_pdf_btn,
+                download_docx_btn,
+                download_file,
+            ) = create_buttons_section()
+        
+        # Right Column - History Management
         with gr.Column(scale=1):
-            gr.Markdown("### 📚 Chat History")
-
-            search_box = gr.Textbox(
-                label="🔍 Search",
-                placeholder="Search in chats...",
-                lines=1,
-            )
-
-            history_dropdown = gr.Dropdown(
-                label="📚 Previous chats (newest first)",
-                choices=["⏳ Loading..."],
-                value=None,
-                interactive=True,
-                allow_custom_value=False,
-            )
-
-            gr.Markdown("---")
-
-            with gr.Accordion("🗑️ Delete Chat", open=False):
-                delete_dropdown = gr.Dropdown(
-                    label="Select chat to delete",
-                    choices=[],
-                    value=None,
-                    interactive=True,
-                )
-                with gr.Row():
-                    delete_button = gr.Button(
-                        "🗑️ Delete Selected",
-                        variant="stop",
-                        scale=1,
-                        interactive=False,  # Disabled by default
-                    )
-                    clear_all_button = gr.Button(
-                        "🧹 Clear All Chats",
-                        variant="stop",
-                        scale=1,
-                    )
-
+            (
+                history_dropdown,
+                search_box,
+                delete_dropdown,
+                delete_btn,
+                clear_all_btn,
+            ) = create_history_section()
+    
     # -------------------------------
-    # Events
+    # Event Wiring
     # -------------------------------
-
-    # Initialization: Load history, Chroma vectorstore, and RAG document registry
-    demo.load(
-        fn=initialize_history,
-        inputs=None,
-        outputs=[history_state, history_dropdown, delete_dropdown, search_box],
+    
+    # Initialization events
+    wire_initialization_events(
+        demo,
+        history_state,
+        history_dropdown,
+        delete_dropdown,
+        search_box,
+        rag_uploaded_state,
+        rag_status_box,
     )
     
-    # Initialize Chroma vectorstore from HF Hub (must happen before registry)
-    demo.load(
-        fn=initialize_chroma_vectorstore,
-        inputs=None,
-        outputs=None,
+    # RAG upload/clear events
+    wire_rag_events(
+        rag_file_upload,
+        rag_clear_btn,
+        rag_uploaded_state,
+        rag_status_box,
     )
     
-    # Initialize RAG document registry
-    demo.load(
-        fn=initialize_rag_registry,
-        inputs=None,
-        outputs=[rag_uploaded_state, rag_status_box],
-    )
-
-    # Search
-    search_box.change(
-        fn=search_in_history,
-        inputs=[search_box, history_state],
-        outputs=[history_dropdown],
-    )
-
-    # Selection of chat
-    history_dropdown.change(
-        fn=load_selected_chat,
-        inputs=[history_dropdown, history_state],
-        outputs=[topic_input, output_box],
-    ).then(
-        fn=lambda text: gr.update(interactive=bool(text)),
-        inputs=[output_box],
-        outputs=[download_btn],
-    )
-
-    # -------------------------------
-    # Upload callbacks
-    # -------------------------------
-    rag_file_upload.upload(
-        fn=upload_documents,
-        inputs=[rag_file_upload, rag_uploaded_state],
-        outputs=[rag_uploaded_state, rag_status_box],
-    )
-
-    rag_clear_btn.click(
-        fn=clear_rag_index,
-        inputs=[rag_uploaded_state],
-        outputs=[rag_uploaded_state, rag_status_box],
-    )
-
-    # -------------------------------
-    # Explain callbacks
-    # -------------------------------
-    click_enable = explain_button.click(
-        fn=lambda: gr.update(interactive=True),
-        inputs=None,
-        outputs=[stop_btn],
-    )
-
-    click_stream = click_enable.then(
-        fn=explain_topic_stream,
-        inputs=[topic_input, history_state, history_mode, rag_uploaded_state],  # Pass uploaded docs to callback
-        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
-    )
-
-    click_disable = click_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
-        inputs=None,
-        outputs=[stop_btn, download_btn],
-    )
-
-    submit_enable = topic_input.submit(
-        fn=lambda: gr.update(interactive=True),
-        inputs=None,
-        outputs=[stop_btn],
-    )
-
-    submit_stream = submit_enable.then(
-        fn=explain_topic_stream,
-        inputs=[topic_input, history_state, history_mode, rag_uploaded_state],
-        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
-    )
-
-    submit_disable = submit_stream.then(
-        fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
-        inputs=None,
-        outputs=[stop_btn, download_btn],
-    )
-
-    # Stop button
-    stop_btn.click(
-        fn=lambda: gr.update(interactive=False),
-        inputs=None,
-        outputs=[stop_btn],
-        cancels=[click_stream, submit_stream],
-    )
-
-    # -------------------------------
-    # Download buttons
-    # -------------------------------
-    download_btn.click(
-        fn=lambda: (gr.update(visible=True, open=True), gr.update(visible=False, value=None)),
-        inputs=None,
-        outputs=[download_accordion, download_file],
-    )
-
-    download_md_btn.click(
-        fn=lambda topic, output: download_chat(topic, output, "Markdown"),
-        inputs=[topic_input, output_box],
-        outputs=[download_file],
-    ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
-        inputs=[download_file],
-        outputs=[download_file, download_accordion],
-    )
-
-    download_pdf_btn.click(
-        fn=lambda topic, output: download_chat(topic, output, "PDF"),
-        inputs=[topic_input, output_box],
-        outputs=[download_file],
-    ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
-        inputs=[download_file],
-        outputs=[download_file, download_accordion],
-    )
-
-    download_docx_btn.click(
-        fn=lambda topic, output: download_chat(topic, output, "Word"),
-        inputs=[topic_input, output_box],
-        outputs=[download_file],
-    ).then(
-        fn=lambda file: (gr.update(visible=bool(file)), gr.update(visible=False, open=True)),
-        inputs=[download_file],
-        outputs=[download_file, download_accordion],
-    )
-
-    # Clear button
-    clear_button.click(
-        fn=lambda: ("", "", gr.update(interactive=False), gr.update(visible=False, open=True), gr.update(visible=False, value=None)),
-        inputs=None,
-        outputs=[topic_input, output_box, download_btn, download_accordion, download_file],
-    )
-
-    # Enable/disable delete button based on selection
-    delete_dropdown.change(
-        fn=lambda x: gr.update(interactive=bool(x)),
-        inputs=[delete_dropdown],
-        outputs=[delete_button],
+    # Explanation generation events
+    wire_explanation_events(
+        explain_btn,
+        topic_input,
+        stop_btn,
+        download_btn,
+        clear_btn,
+        history_state,
+        history_mode,
+        rag_uploaded_state,
+        output_box,
+        history_dropdown,
+        delete_dropdown,
+        download_accordion,
+        download_file,
     )
     
-    # Delete selected chat
-    delete_button.click(
-        fn=delete_selected_chat,
-        inputs=[delete_dropdown, history_state, search_box],
-        outputs=[history_state, history_dropdown, delete_dropdown, delete_button, topic_input, output_box],
+    # History management events
+    wire_history_events(
+        search_box,
+        history_dropdown,
+        delete_dropdown,
+        delete_btn,
+        clear_all_btn,
+        history_state,
+        topic_input,
+        output_box,
+        download_btn,
     )
     
-    # Clear all chats
-    clear_all_button.click(
-        fn=clear_all_chats,
-        inputs=None,
-        outputs=[history_state, history_dropdown, delete_dropdown, delete_button, topic_input, output_box],
+    # Download events
+    wire_download_events(
+        download_btn,
+        download_accordion,
+        download_md_btn,
+        download_pdf_btn,
+        download_docx_btn,
+        download_file,
+        topic_input,
+        output_box,
     )
 
-# Enable queue for streaming
+# Enable queue for streaming and cancels functionality
 demo.queue()
 
 if __name__ == "__main__":
     demo.launch()
-
