@@ -48,21 +48,23 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     with gr.Row():
         with gr.Column(scale=2):
             # -------------------------------
-            # RAG Document Upload
+            # RAG Document Upload (Collapsible)
             # -------------------------------
-            with gr.Row():
+            with gr.Accordion("📚 Upload Documents for Context-Aware Answers (RAG)", open=False):
                 rag_file_upload = gr.File(
-                    label="📂 Upload Technical Documents for RAG",
+                    label="📂 Select Files",
                     file_types=[".pdf", ".txt", ".docx"],
-                    file_count="multiple",  # Allow multiple files
+                    file_count="multiple",
                     type="filepath",
                 )
-                rag_clear_btn = gr.Button(
-                    "🗑️ Clear Uploads",
-                    variant="secondary",
-                    scale=1,
-                )
+                with gr.Row():
+                    rag_clear_btn = gr.Button(
+                        "🗑️ Clear All Documents",
+                        variant="secondary",
+                        scale=1,
+                    )
 
+            # Status always visible
             rag_status_box = gr.Textbox(
                 label="📄 Uploaded Documents Status",
                 lines=2,
