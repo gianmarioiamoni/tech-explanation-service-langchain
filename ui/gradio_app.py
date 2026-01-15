@@ -32,6 +32,7 @@ from ui.callbacks import (
 )
 from ui.callbacks.download_callbacks import download_chat
 from ui.callbacks.upload_callbacks import upload_documents, clear_rag_index  # NEW RAG callbacks
+from ui.callbacks.rag_callbacks import initialize_rag_registry  # RAG registry init
 
 # -------------------------------
 # UI Layout and Components
@@ -189,11 +190,17 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # Events
     # -------------------------------
 
-    # Initialization
+    # Initialization: Load history and RAG document registry
     demo.load(
         fn=initialize_history,
         inputs=None,
         outputs=[history_state, history_dropdown, delete_dropdown, search_box],
+    )
+    
+    demo.load(
+        fn=initialize_rag_registry,
+        inputs=None,
+        outputs=[rag_uploaded_state, rag_status_box],
     )
 
     # Search

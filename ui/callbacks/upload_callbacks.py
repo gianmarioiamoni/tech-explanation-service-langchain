@@ -13,9 +13,11 @@ from pathlib import Path
 from typing import List, Tuple
 
 from app.services.rag.rag_service import RAGService
+from app.services.rag.document_registry import DocumentRegistry
 
-# Domain service instance
+# Domain service instances
 rag_service = RAGService()
+document_registry = DocumentRegistry()
 
 # Supported file types
 SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".md", ".docx"]
@@ -53,19 +55,18 @@ def upload_documents(files: List[str], uploaded_state: List[str]) -> Tuple[List[
             print(f"❌ Failed to index {file_path}: {e}")
             failed_files.append(Path(file_path).name)
 
-    # Prepare status message
-    messages = []
-    if indexed_files:
-        messages.append(f"✅ Indexed files: {', '.join(indexed_files)}")
-    if failed_files:
-        messages.append(f"⚠️ Failed or unsupported files: {', '.join(failed_files)}")
-
-    status_message = "\n".join(messages)
+    # Add indexed files to persistent registry
+    for filename in indexed_files:
+        document_registry.add_document(filename)
     
-    # Update state with new files
-    updated_state = (uploaded_state if uploaded_state else []) + indexed_files
+    # Load full registry for status message
+    registry = document_registry.load_registry()
+    status_message = document_registry.format_status(registry)
     
-    return updated_state, status_message
+    # Return filenames list for gr.State
+    filenames = document_registry.get_filenames()
+    
+    return filenames, status_message
 
 
 def clear_rag_index(uploaded_state: List[str]) -> Tuple[List[str], str]:
@@ -82,8 +83,14 @@ def clear_rag_index(uploaded_state: List[str]) -> Tuple[List[str], str]:
     try:
         print(f"\n{'='*60}")
         print(f"🗑️ User requested: Clear RAG index")
+        
+        # Clear vectorstore
         rag_service.clear_index()
-        print(f"✅ RAG index cleared successfully")
+        
+        # Clear persistent registry
+        document_registry.clear_registry()
+        
+        print(f"✅ RAG index and document registry cleared successfully")
         print(f"{'='*60}\n")
         return [], "🗑️ All documents removed from RAG index."
     except Exception as e:
