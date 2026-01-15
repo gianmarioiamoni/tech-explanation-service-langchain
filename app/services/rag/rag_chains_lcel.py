@@ -7,7 +7,7 @@
 # - Support strategies like document-stuffing, map-reduce, or custom context injection
 # - Can be reused by RAGService or other services
 
-from langchain_core.runnables import RunnableSequence, RunnableMap, RunnableParallel, Runnable
+from langchain_core.runnables import RunnableSequence, RunnableMap, RunnableParallel, RunnableLambda
 from app.services.rag.rag_retriever import RAGRetrieverService as RAGRetriever
 from app.services.explanation.output_formatter import OutputFormatter
 from app.chains.tech_explanation_chain import tech_explanation_chain
@@ -22,42 +22,76 @@ formatter = OutputFormatter()
 # Document Stuffing Chain
 # -------------------------------
 # This strategy injects all retrieved documents as context before calling the LLM
-document_stuff_chain = RunnableSequence(
-    # Step 1: Retrieve documents relevant to the topic
-    [
-        retriever.retrieve_runnable(),  # Returns a list of documents
-        # Step 2: Combine retrieved docs into a single context string
-        Runnable(lambda docs: "\n\n".join([doc["content"] for doc in docs])),
-        # Step 3: Call LLM with topic + combined context
-        Runnable(lambda context: tech_explanation_chain.invoke({"topic": context})),  # tech_explanation_chain from your app
-        # Step 4: Sanitize output
-        Runnable(formatter.sanitize_output),
-    ]
-)
+def build_document_stuff_chain():
+    # Build a chain that retrieves documents and uses them as context
+    #
+    # Input: {"topic": str}
+    # Output: sanitized explanation string
+    
+    def retrieve_and_format(input_dict):
+        # Retrieve documents and format them with the topic
+        topic = input_dict["topic"]
+        docs = retriever.invoke(topic)
+        
+        if not docs:
+            # No relevant docs, just use topic
+            context = topic
+        else:
+            # Combine docs into context
+            context = "\n\n".join([doc.page_content for doc in docs])
+            context = f"Context:\n{context}\n\nTopic: {topic}"
+        
+        return {"topic": context}
+    
+    return (
+        RunnableLambda(retrieve_and_format)
+        | tech_explanation_chain
+        | RunnableLambda(formatter.sanitize_output)
+    )
+
+document_stuff_chain = build_document_stuff_chain()
 
 # -------------------------------
 # Map-Reduce Chain
 # -------------------------------
 # This strategy processes each retrieved document separately and then combines answers
-map_reduce_chain = RunnableSequence(
-    [
-        retriever.retrieve_runnable(),
-        # Step 1: Process each document individually (map)
-        RunnableParallel(
-            Runnable(lambda doc: tech_explanation_chain.invoke({"topic": doc["content"]})),
-            return_exceptions=False
-        ),
-        # Step 2: Aggregate individual answers (reduce)
-        Runnable(lambda answers: "\n\n".join(answers)),
-        # Step 3: Sanitize final output
-        Runnable(formatter.sanitize_output),
-    ]
-)
+def build_map_reduce_chain():
+    # Build a chain that processes each document separately then combines
+    #
+    # Input: {"topic": str}
+    # Output: sanitized explanation string
+    
+    def retrieve_and_process(input_dict):
+        # Retrieve documents and process each one
+        topic = input_dict["topic"]
+        docs = retriever.invoke(topic)
+        
+        if not docs:
+            # No relevant docs, just use topic
+            return tech_explanation_chain.invoke({"topic": topic})
+        
+        # Process each document with the LLM
+        results = []
+        for doc in docs:
+            doc_context = f"Context:\n{doc.page_content}\n\nTopic: {topic}"
+            result = tech_explanation_chain.invoke({"topic": doc_context})
+            results.append(result)
+        
+        # Combine all results
+        combined = "\n\n".join(results)
+        return combined
+    
+    return (
+        RunnableLambda(retrieve_and_process)
+        | RunnableLambda(formatter.sanitize_output)
+    )
+
+map_reduce_chain = build_map_reduce_chain()
 
 # -------------------------------
 # Expose chain getters
 # -------------------------------
-def get_chain(strategy: str = "document_stuff") -> RunnableSequence:
+def get_chain(strategy: str = "document_stuff"):
     # Return a preconfigured LCEL chain based on strategy name
     #
     # Args:

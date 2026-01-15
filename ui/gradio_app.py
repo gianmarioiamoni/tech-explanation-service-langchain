@@ -31,7 +31,7 @@ from ui.callbacks import (
     search_in_history,
 )
 from ui.callbacks.download_callbacks import download_chat
-from ui.callbacks.upload_callbacks import upload_documents, clear_uploaded_documents  # NEW RAG callbacks
+from ui.callbacks.upload_callbacks import upload_documents, clear_rag_index  # NEW RAG callbacks
 
 # -------------------------------
 # UI Layout and Components
@@ -54,10 +54,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 rag_file_upload = gr.File(
                     label="📂 Upload Technical Documents for RAG",
                     file_types=[".pdf", ".txt", ".docx"],
-                    file_types_accept=[".pdf", ".txt", ".docx"],
-                    interactive=True,
-                    type="file",
-                    file_types_multiple=True,  # Allow multiple files
+                    file_count="multiple",  # Allow multiple files
+                    type="filepath",
                 )
                 rag_clear_btn = gr.Button(
                     "🗑️ Clear Uploads",
@@ -224,7 +222,7 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     )
 
     rag_clear_btn.click(
-        fn=clear_uploaded_documents,
+        fn=clear_rag_index,
         inputs=[rag_uploaded_state],
         outputs=[rag_uploaded_state, rag_status_box],
     )

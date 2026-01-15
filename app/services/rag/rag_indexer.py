@@ -17,6 +17,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 import os
+import shutil
 
 class RAGIndexer:
     # Service for indexing documents for RAG retrieval
@@ -91,3 +92,39 @@ class RAGIndexer:
         if docs:
             self.vstore.add_documents(docs)
             self.vstore.persist()
+
+    def retrieve(self, query: str, top_k: int = 5) -> List[Document]:
+        # Retrieve relevant documents from vectorstore
+        #
+        # Args:
+        #     query: search query or topic
+        #     top_k: number of documents to retrieve
+        #
+        # Returns:
+        #     List of relevant Document objects
+
+        if not query or not query.strip():
+            return []
+        
+        retriever = self.vstore.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": top_k}
+        )
+        return retriever.get_relevant_documents(query)
+
+    def clear(self):
+        # Clear the vectorstore by deleting all indexed documents
+        #
+        # Returns:
+        #     None
+
+        # Delete and recreate vectorstore
+        import shutil
+        if os.path.exists(self.vectorstore_path):
+            shutil.rmtree(self.vectorstore_path)
+        
+        # Reinitialize empty vectorstore
+        self.vstore = Chroma(
+            persist_directory=self.vectorstore_path,
+            embedding_function=self.embeddings
+        )
