@@ -63,6 +63,24 @@ class RAGService:
         return self.formatter.sanitize_output(result)
 
     # -------------------------------
+    # Helper: add document from file
+    # -------------------------------
+    def add_document(self, file_path: str):
+        # Load, split, and add a document from a file path
+        #
+        # Args:
+        #     file_path: Path to document file (PDF, TXT, DOCX)
+        
+        # Load documents from file
+        docs = self.indexer.load_documents([file_path])
+        
+        # Split into chunks
+        chunks = self.indexer.split_documents(docs)
+        
+        # Add to vectorstore
+        self.indexer.add_documents(chunks)
+
+    # -------------------------------
     # Helper: add documents to index
     # -------------------------------
     def add_documents(self, documents: List[dict]):

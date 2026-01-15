@@ -6,7 +6,8 @@ langchain-text-splitters>=0.2,<2.0
 openai>=1.0,<3.0
 
 # RAG (Vector stores and document processing)
-chromadb>=0.4,<1.0
+langchain-chroma>=1.1.0,<2.0
+chromadb>=1.4.0,<2.0
 pypdf>=3.0,<5.0
 docx2txt>=0.8,<1.0
 

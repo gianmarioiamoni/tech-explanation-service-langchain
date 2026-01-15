@@ -20,19 +20,20 @@ rag_service = RAGService()
 # Supported file types
 SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".docx"]
 
-def upload_documents(files: List[str]) -> Tuple[str, List[str]]:
+def upload_documents(files: List[str], uploaded_state: List[str]) -> Tuple[List[str], str]:
     # Handle uploaded files and update RAG index
     #
     # Args:
     #     files: List of uploaded file paths from Gradio File component
+    #     uploaded_state: Current list of uploaded files (from gr.State)
     #
     # Returns:
     #     Tuple containing:
+    #       - Updated list of uploaded filenames (for gr.State)
     #       - Status message for the UI
-    #       - List of filenames successfully indexed
 
     if not files:
-        return "⚠️ No files uploaded.", []
+        return uploaded_state if uploaded_state else [], "⚠️ No files uploaded."
 
     indexed_files = []
     failed_files = []
@@ -60,18 +61,27 @@ def upload_documents(files: List[str]) -> Tuple[str, List[str]]:
         messages.append(f"⚠️ Failed or unsupported files: {', '.join(failed_files)}")
 
     status_message = "\n".join(messages)
-    return status_message, indexed_files
+    
+    # Update state with new files
+    updated_state = (uploaded_state if uploaded_state else []) + indexed_files
+    
+    return updated_state, status_message
 
 
-def clear_rag_index() -> str:
+def clear_rag_index(uploaded_state: List[str]) -> Tuple[List[str], str]:
     # Clear all documents from the RAG index
     #
+    # Args:
+    #     uploaded_state: Current list of uploaded files (from gr.State)
+    #
     # Returns:
-    #     Status message for the UI
+    #     Tuple containing:
+    #       - Empty list for gr.State (cleared)
+    #       - Status message for the UI
 
     try:
         rag_service.clear_index()
-        return "🗑️ All documents removed from RAG index."
+        return [], "🗑️ All documents removed from RAG index."
     except Exception as e:
         print(f"❌ Failed to clear RAG index: {e}")
-        return f"❌ Failed to clear RAG index: {e}"
+        return uploaded_state, f"❌ Failed to clear RAG index: {e}"
