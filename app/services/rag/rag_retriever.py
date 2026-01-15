@@ -9,6 +9,7 @@
 
 from langchain_core.runnables import Runnable, RunnableLambda
 from langchain_chroma import Chroma
+from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
 class RAGRetrieverService(Runnable):
@@ -21,17 +22,21 @@ class RAGRetrieverService(Runnable):
     # Returns:
     #     List of relevant Documents
 
-    def __init__(self, vectorstore_path: str = "./chroma_db", top_k: int = 5):
+    def __init__(self, vectorstore_path: str = "./chroma_db", top_k: int = 5, embedding_model: str = "text-embedding-3-small"):
         self.vectorstore_path = vectorstore_path
         self.top_k = top_k
-        # Initialize Chroma vectorstore (embedding function already saved)
-        self.vstore = Chroma(persist_directory=vectorstore_path)
+        # Initialize embeddings (MUST match RAGIndexer embeddings)
+        self.embeddings = OpenAIEmbeddings(model=embedding_model)
+        # Initialize Chroma vectorstore with same embeddings
+        self.vstore = Chroma(persist_directory=vectorstore_path, embedding_function=self.embeddings)
 
-    def invoke(self, query: str) -> list[Document]:
+    def invoke(self, query: str, config=None) -> list[Document]:
         # Retrieve documents from vectorstore
+        # (Compatible with LCEL Runnable interface)
         #
         # Args:
         #     query: user question or topic
+        #     config: optional RunnableConfig (for LCEL compatibility)
         #
         # Returns:
         #     List of top_k Document objects
@@ -41,7 +46,7 @@ class RAGRetrieverService(Runnable):
 
         # Use as retriever
         retriever = self.vstore.as_retriever(search_type="similarity", search_kwargs={"k": self.top_k})
-        results = retriever.get_relevant_documents(query)
+        results = retriever.invoke(query, config=config)
         return results
 
     def retrieve_runnable(self) -> RunnableLambda:

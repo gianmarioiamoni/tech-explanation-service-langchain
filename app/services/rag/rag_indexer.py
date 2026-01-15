@@ -112,7 +112,7 @@ class RAGIndexer:
             search_type="similarity",
             search_kwargs={"k": top_k}
         )
-        return retriever.get_relevant_documents(query)
+        return retriever.invoke(query)
 
     def clear(self):
         # Clear the vectorstore by deleting all indexed documents

@@ -98,10 +98,16 @@ class RAGService:
         #     True if documents exist, False otherwise
         
         try:
-            # Try retrieving with a generic query
-            test_docs = self.indexer.retrieve("test", top_k=1)
-            return len(test_docs) > 0
-        except:
+            # Check if collection has any documents
+            # Use Chroma's internal collection count
+            collection = self.indexer.vstore._collection
+            count = collection.count()
+            logger.info(f"📊 Vectorstore check: {count} documents indexed")
+            print(f"📊 Vectorstore contains {count} documents")
+            return count > 0
+        except Exception as e:
+            logger.warning(f"⚠️ Error checking documents: {e}")
+            print(f"⚠️ Error checking vectorstore: {e}")
             return False
 
     # -------------------------------
