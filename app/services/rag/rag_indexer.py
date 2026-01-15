@@ -81,7 +81,8 @@ class RAGIndexer:
         return all_chunks
 
     def add_documents(self, docs: List[Document]):
-        # Add chunked documents to vectorstore and persist
+        # Add chunked documents to vectorstore
+        # (Auto-persisted by langchain-chroma to disk)
         #
         # Args:
         #     docs: list of chunked Document objects
@@ -91,7 +92,8 @@ class RAGIndexer:
 
         if docs:
             self.vstore.add_documents(docs)
-            self.vstore.persist()
+            # Note: langchain-chroma auto-persists to persist_directory
+            # No need to call .persist() manually
 
     def retrieve(self, query: str, top_k: int = 5) -> List[Document]:
         # Retrieve relevant documents from vectorstore
