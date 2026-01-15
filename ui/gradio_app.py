@@ -28,6 +28,7 @@ from ui.callbacks import (
     initialize_history,
     load_selected_chat,
     delete_selected_chat,
+    clear_all_chats,
     search_in_history,
 )
 from ui.callbacks.download_callbacks import download_chat
@@ -184,10 +185,18 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                     value=None,
                     interactive=True,
                 )
-                delete_button = gr.Button(
-                    "🗑️ Delete Selected",
-                    variant="stop",
-                )
+                with gr.Row():
+                    delete_button = gr.Button(
+                        "🗑️ Delete Selected",
+                        variant="stop",
+                        scale=1,
+                        interactive=False,  # Disabled by default
+                    )
+                    clear_all_button = gr.Button(
+                        "🧹 Clear All Chats",
+                        variant="stop",
+                        scale=1,
+                    )
 
     # -------------------------------
     # Events
@@ -340,11 +349,25 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         outputs=[topic_input, output_box, download_btn, download_accordion, download_file],
     )
 
-    # Delete button
+    # Enable/disable delete button based on selection
+    delete_dropdown.change(
+        fn=lambda x: gr.update(interactive=bool(x)),
+        inputs=[delete_dropdown],
+        outputs=[delete_button],
+    )
+    
+    # Delete selected chat
     delete_button.click(
         fn=delete_selected_chat,
         inputs=[delete_dropdown, history_state, search_box],
-        outputs=[history_state, history_dropdown, delete_dropdown, topic_input, output_box],
+        outputs=[history_state, history_dropdown, delete_dropdown, delete_button, topic_input, output_box],
+    )
+    
+    # Clear all chats
+    clear_all_button.click(
+        fn=clear_all_chats,
+        inputs=None,
+        outputs=[history_state, history_dropdown, delete_dropdown, delete_button, topic_input, output_box],
     )
 
 # Enable queue for streaming

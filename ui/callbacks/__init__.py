@@ -9,6 +9,7 @@ from ui.callbacks.history_callbacks import (
     initialize_history,
     load_selected_chat,
     delete_selected_chat,
+    clear_all_chats,
 )
 from ui.callbacks.search_callbacks import search_in_history
 
@@ -17,6 +18,7 @@ __all__ = [
     "initialize_history",
     "load_selected_chat",
     "delete_selected_chat",
+    "clear_all_chats",
     "search_in_history",
 ]
 

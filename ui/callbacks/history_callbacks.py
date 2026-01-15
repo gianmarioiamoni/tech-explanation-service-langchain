@@ -99,10 +99,11 @@ def delete_selected_chat(delete_selection, history, search_query):
     #     search_query: Current search query (unused, but kept for compatibility)
     #
     # Returns:
-    #     Tuple of (new_history, history_dropdown_update, delete_dropdown_update, topic_clear, output_clear)
+    #     Tuple of (new_history, history_dropdown_update, delete_dropdown_update, 
+    #               delete_button_update, topic_clear, output_clear)
     
     if not delete_selection:
-        return history, gr.update(), gr.update(), "", ""
+        return history, gr.update(), gr.update(), gr.update(), "", ""
     
     try:
         # Format: "IDX. topic"
@@ -121,9 +122,51 @@ def delete_selected_chat(delete_selection, history, search_query):
             # Info message
             info_msg = get_history_info_message(len(new_history))
             
-            return new_history, gr.update(choices=radio_choices, value=None, info=info_msg), gr.update(choices=delete_choices, value=None), "", ""
+            return (
+                new_history,
+                gr.update(choices=radio_choices, value=None, info=info_msg),
+                gr.update(choices=delete_choices, value=None),
+                gr.update(interactive=False),  # Disable delete button after deletion
+                "",
+                "",
+            )
     except Exception as e:
         print(f"❌ Errore eliminazione: {e}")
     
-    return history, gr.update(), gr.update(), gr.update(), gr.update()
+    return history, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+
+
+def clear_all_chats():
+    # Clear all chats from history.
+    #
+    # Args:
+    #     None
+    #
+    # Returns:
+    #     Tuple of (empty_history, history_dropdown_update, delete_dropdown_update, 
+    #               delete_button_update, topic_clear, output_clear)
+    
+    print("\n🧹 Clearing all chats from history...")
+    
+    # Save empty history to HF Hub
+    empty_history = []
+    history_repository.save_history(empty_history)
+    
+    # Update all dropdowns and UI components
+    radio_choices, radio_value = history_formatter.create_history_choices(empty_history)
+    delete_choices = history_formatter.create_delete_choices(empty_history)
+    
+    # Info message
+    info_msg = get_history_info_message(len(empty_history))
+    
+    print(f"✅ All chats cleared")
+    
+    return (
+        empty_history,
+        gr.update(choices=radio_choices, value=None, info=info_msg),
+        gr.update(choices=delete_choices, value=None),
+        gr.update(interactive=False),  # Disable delete button
+        "",
+        "",
+    )
 
