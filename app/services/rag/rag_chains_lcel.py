@@ -8,7 +8,7 @@
 # - Can be reused by RAGService or other services
 
 from langchain_core.runnables import RunnableSequence, RunnableMap, RunnableParallel, Runnable
-from app.services.rag.rag_retriever import RAGRetriever
+from app.services.rag.rag_retriever import RAGRetrieverService as RAGRetriever
 from app.services.explanation.output_formatter import OutputFormatter
 from app.chains.tech_explanation_chain import tech_explanation_chain
 
