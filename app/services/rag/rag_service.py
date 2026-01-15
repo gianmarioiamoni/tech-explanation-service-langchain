@@ -31,6 +31,13 @@ class RAGService:
     def explain_topic(self, topic: str, strategy: str = "document_stuff") -> str:
         # Generate a topic explanation using RAG if possible
         #
+        # Logic flow:
+        # 1. Check: documents uploaded in vectorstore?
+        # 2. Yes → Retrieve relevant chunks
+        #    - Relevant chunks found? → Use RAG chain
+        #    - No relevant chunks? → Use generic LLM chain
+        # 3. No → Use generic LLM chain
+        #
         # Args:
         #     topic: User-provided technical topic
         #     strategy: RAG strategy ("document_stuff" or "map_reduce")
@@ -38,29 +45,53 @@ class RAGService:
         # Returns:
         #     Sanitized explanation text
 
-        # Step 1: Retrieve relevant documents
+        # Step 1: Check if vectorstore has any documents
+        if not self.has_documents():
+            # No documents uploaded → Generic LLM chain
+            return self._explain_generic(topic)
+
+        # Step 2: Retrieve relevant documents
         docs = self.indexer.retrieve(topic)
+        
         if not docs:
-            # Fallback: no relevant docs, return generic explanation
-            from app.services.explanation.explanation_service import ExplanationService
-            explanation_service = ExplanationService()
-            accumulated = ""
-            for chunk in explanation_service.explain_stream(topic):
-                accumulated += chunk
-            return self.formatter.sanitize_output(accumulated)
+            # No relevant chunks found → Generic LLM chain
+            return self._explain_generic(topic)
 
-        # Step 2: Select LCEL chain based on strategy
+        # Step 3: Relevant chunks found → Use RAG chain
         chain = get_chain(strategy)
-
-        # Step 3: Prepare input for LCEL chain
-        # Input includes topic + retrieved documents
         lcel_input = {"topic": topic}
-
-        # Step 4: Invoke chain (document-stuffing or map-reduce)
         result = chain.invoke(lcel_input)
+        
+        return result  # Already sanitized by chain
 
-        # Step 5: Return sanitized output
-        return self.formatter.sanitize_output(result)
+    def _explain_generic(self, topic: str) -> str:
+        # Fallback to generic LLM explanation (no RAG)
+        #
+        # Args:
+        #     topic: User-provided technical topic
+        #
+        # Returns:
+        #     Sanitized explanation text
+        
+        from app.services.explanation.explanation_service import ExplanationService
+        explanation_service = ExplanationService()
+        accumulated = ""
+        for chunk in explanation_service.explain_stream(topic):
+            accumulated = chunk  # Already accumulated by stream
+        return self.formatter.sanitize_output(accumulated)
+
+    def has_documents(self) -> bool:
+        # Check if vectorstore has any indexed documents
+        #
+        # Returns:
+        #     True if documents exist, False otherwise
+        
+        try:
+            # Try retrieving with a generic query
+            test_docs = self.indexer.retrieve("test", top_k=1)
+            return len(test_docs) > 0
+        except:
+            return False
 
     # -------------------------------
     # Helper: add document from file
