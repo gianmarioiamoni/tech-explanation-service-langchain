@@ -120,13 +120,48 @@ class RAGIndexer:
         # Returns:
         #     None
 
-        # Delete and recreate vectorstore
-        import shutil
-        if os.path.exists(self.vectorstore_path):
-            shutil.rmtree(self.vectorstore_path)
+        # Check current count before clearing
+        try:
+            count_before = self.vstore._collection.count()
+            print(f"🗑️ Clearing vectorstore: {count_before} documents indexed")
+        except:
+            count_before = "unknown"
+            print(f"🗑️ Clearing vectorstore...")
+
+        # Get all document IDs and delete them
+        try:
+            # Get all IDs from the collection
+            collection = self.vstore._collection
+            all_docs = collection.get()
+            if all_docs and 'ids' in all_docs and all_docs['ids']:
+                doc_ids = all_docs['ids']
+                # Delete all documents by ID
+                collection.delete(ids=doc_ids)
+                print(f"✅ Deleted {len(doc_ids)} documents from collection")
+            else:
+                print(f"✅ Collection was already empty")
+        except Exception as e:
+            print(f"⚠️ Could not delete documents via API: {e}")
+            print(f"⚠️ Falling back to directory deletion...")
+            
+            # Fallback: Delete the entire directory
+            if os.path.exists(self.vectorstore_path):
+                shutil.rmtree(self.vectorstore_path)
+                print(f"✅ Deleted vectorstore directory")
+                
+                # Reinitialize
+                self.vstore = Chroma(
+                    persist_directory=self.vectorstore_path,
+                    embedding_function=self.embeddings
+                )
         
-        # Reinitialize empty vectorstore
-        self.vstore = Chroma(
-            persist_directory=self.vectorstore_path,
-            embedding_function=self.embeddings
-        )
+        # Confirm it's empty
+        try:
+            count_after = self.vstore._collection.count()
+            print(f"✅ Vectorstore cleared: {count_before} → {count_after} documents")
+            if count_after == 0:
+                print(f"✅ Vectorstore is now empty")
+            else:
+                print(f"⚠️ Warning: Vectorstore still has {count_after} documents!")
+        except Exception as e:
+            print(f"⚠️ Could not verify count: {e}")

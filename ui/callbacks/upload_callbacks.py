@@ -80,7 +80,11 @@ def clear_rag_index(uploaded_state: List[str]) -> Tuple[List[str], str]:
     #       - Status message for the UI
 
     try:
+        print(f"\n{'='*60}")
+        print(f"🗑️ User requested: Clear RAG index")
         rag_service.clear_index()
+        print(f"✅ RAG index cleared successfully")
+        print(f"{'='*60}\n")
         return [], "🗑️ All documents removed from RAG index."
     except Exception as e:
         print(f"❌ Failed to clear RAG index: {e}")
