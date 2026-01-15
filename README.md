@@ -157,7 +157,7 @@ Access at `http://localhost:7860`
 
 ### Using RAG (Context-Aware Explanations)
 1. Click **📂 Upload Technical Documents**
-2. Select PDF, TXT, or DOCX files
+2. Select PDF, TXT, MD (Markdown), or DOCX files
 3. Wait for indexing confirmation
 4. Ask questions about the uploaded content
 5. System automatically uses context when relevant
@@ -235,7 +235,7 @@ tech-explanation-service-langchain/
 | **UI** | Gradio 6.3 | Interactive web interface |
 | **API** | FastAPI 0.115.5 | Backend service (optional) |
 | **Storage** | Hugging Face Hub | Persistent chat history |
-| **Document Processing** | pypdf, docx2txt, ReportLab | PDF/DOCX parsing & generation |
+| **Document Processing** | pypdf, docx2txt, unstructured, markdown, ReportLab | PDF/MD/DOCX parsing & generation |
 
 ---
 
