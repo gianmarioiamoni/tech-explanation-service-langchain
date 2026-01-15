@@ -48,27 +48,49 @@ def explain_topic_stream(topic: str, history, history_mode: str, rag_uploaded_st
     topic_contents = {}
     aggregate_mode = history_mode == "Aggregate into one chat"
 
+    # Track modes for badge display
+    modes = []
+    
     for topic_name in topics:
         # Step 1: Use RAG service (Conditional RAG logic handles everything)
         # - If docs uploaded + topic covered → RAG chain
         # - Otherwise → Generic LLM chain
-        explanation = rag_service.explain_topic(topic_name)
+        explanation, mode = rag_service.explain_topic(topic_name)
+        modes.append(mode)
         
         # Already sanitized by RAG service
         # (but sanitize again just in case for consistency)
         explanation = output_formatter.sanitize_output(explanation)
         topic_contents[topic_name] = explanation
 
-        # Step 3: Prepare text for streaming
+        # Step 3: Prepare text for streaming with provisional badge
         if aggregate_mode:
             accumulated_raw = output_formatter.aggregate_topics_output(topics, topic_contents)
         else:
             accumulated_raw = f"{topic_name}:\n\n{explanation}"
+        
+        # Add provisional badge during streaming (will be updated at end)
+        streaming_badge = "⏳ Generating...\n\n"
+        streamed_output = streaming_badge + accumulated_raw
 
-        yield history, accumulated_raw, gr.update(), gr.update()
+        yield history, streamed_output, gr.update(), gr.update()
 
     # Final aggregation
     final_text = output_formatter.aggregate_topics_output(topics, topic_contents)
+    
+    # Add badge based on mode
+    # If all topics used RAG, show RAG badge; if any used generic, show generic badge
+    used_rag = any(mode == "rag" for mode in modes)
+    used_generic = any(mode == "generic" for mode in modes)
+    
+    if used_rag and not used_generic:
+        badge = "🧠 Answer generated using your documents\n\n"
+    elif used_generic and not used_rag:
+        badge = "🌐 Answer generated using general knowledge\n\n"
+    else:
+        badge = "🔀 Answer generated using both documents and general knowledge\n\n"
+    
+    final_text = badge + final_text
 
     # Step 4: Update history
     if aggregate_mode:

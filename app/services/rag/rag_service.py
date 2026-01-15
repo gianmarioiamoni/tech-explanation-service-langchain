@@ -7,10 +7,13 @@
 # - Generate context-aware explanations using preconfigured LCEL chains
 # - Decide fallback to generic explanation if no documents match
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
+import logging
 from app.services.rag.rag_indexer import RAGIndexer
 from app.services.rag.rag_chains_lcel import get_chain
 from app.services.explanation.output_formatter import OutputFormatter
+
+logger = logging.getLogger(__name__)
 
 class RAGService:
     # RAG Service using LCEL chains for retrieval-augmented generation
@@ -28,7 +31,7 @@ class RAGService:
     # -------------------------------
     # Context-aware explanation
     # -------------------------------
-    def explain_topic(self, topic: str, strategy: str = "document_stuff") -> str:
+    def explain_topic(self, topic: str, strategy: str = "document_stuff") -> Tuple[str, str]:
         # Generate a topic explanation using RAG if possible
         #
         # Logic flow:
@@ -43,26 +46,34 @@ class RAGService:
         #     strategy: RAG strategy ("document_stuff" or "map_reduce")
         #
         # Returns:
-        #     Sanitized explanation text
+        #     Tuple of (explanation_text, mode)
+        #     mode: "rag" if using documents, "generic" if using general knowledge
 
         # Step 1: Check if vectorstore has any documents
         if not self.has_documents():
             # No documents uploaded → Generic LLM chain
-            return self._explain_generic(topic)
+            logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no documents uploaded)")
+            print(f"🌐 Mode: GENERIC LLM | Reason: No documents uploaded | Topic: '{topic}'")
+            return self._explain_generic(topic), "generic"
 
         # Step 2: Retrieve relevant documents
         docs = self.indexer.retrieve(topic)
         
         if not docs:
             # No relevant chunks found → Generic LLM chain
-            return self._explain_generic(topic)
+            logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no relevant chunks found)")
+            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not covered in documents | Topic: '{topic}'")
+            return self._explain_generic(topic), "generic"
 
         # Step 3: Relevant chunks found → Use RAG chain
+        logger.info(f"🧠 Topic '{topic}': Using RAG (found {len(docs)} relevant chunks)")
+        print(f"🧠 Mode: RAG | Chunks: {len(docs)} | Topic: '{topic}'")
+        
         chain = get_chain(strategy)
         lcel_input = {"topic": topic}
         result = chain.invoke(lcel_input)
         
-        return result  # Already sanitized by chain
+        return result, "rag"  # Already sanitized by chain
 
     def _explain_generic(self, topic: str) -> str:
         # Fallback to generic LLM explanation (no RAG)
