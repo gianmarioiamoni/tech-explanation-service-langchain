@@ -67,7 +67,17 @@ class RAGService:
 
         # Step 3: Relevant chunks found → Use RAG chain
         logger.info(f"🧠 Topic '{topic}': Using RAG (found {len(docs)} relevant chunks)")
+        print(f"\n{'='*60}")
         print(f"🧠 Mode: RAG | Chunks: {len(docs)} | Topic: '{topic}'")
+        print(f"{'='*60}")
+        
+        # Show retrieved context for debugging
+        print(f"📄 Retrieved Context:")
+        for i, doc in enumerate(docs, 1):
+            preview = doc.page_content[:150].replace('\n', ' ')
+            source = doc.metadata.get('source', 'unknown')
+            print(f"  [{i}] {source}: {preview}...")
+        print(f"{'='*60}\n")
         
         chain = get_chain(strategy)
         lcel_input = {"topic": topic}
