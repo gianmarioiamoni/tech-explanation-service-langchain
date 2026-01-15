@@ -1,132 +1,93 @@
 # app/services/rag/rag_indexer.py
 #
-# Service responsible for indexing documents for RAG
-# Handles loading, splitting, embedding, and storing in Chroma vectorstore
+# Service to handle indexing of documents for RAG
 #
+# Responsibilities:
+# - Load documents from disk
+# - Split documents into chunks
+# - Create embeddings
+# - Store in vectorstore (Chroma)
+# - Designed to be used with LCEL
 
 from typing import List
-from pathlib import Path
-from langchain_text_splitters import CharacterTextSplitter, MarkdownHeaderTextSplitter
-from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader
+from langchain_core.runnables import Runnable, RunnableParallel
+from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
-from langchain_core.documents import Document
-
+from langchain_text_splitters import CharacterTextSplitter, MarkdownHeaderTextSplitter
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
+import os
 
 class RAGIndexer:
-    # Service to index documents for RAG retrieval
+    # Service for indexing documents for RAG retrieval
     #
-    # Attributes:
-    #     vectorstore: Chroma instance for embeddings storage
-    #     embeddings: OpenAIEmbeddings instance
+    # Args:
+    #     vectorstore_path: Path to store/reload Chroma vectorstore
+    #     embedding_model: OpenAI embedding model
     #
-    # Methods:
-    #     load_documents(files) -> List[Document]
-    #     split_documents(docs) -> List[Document]
-    #     index_documents(docs) -> None
-    #     add_documents(docs) -> None
-    #     update_document(doc, doc_id) -> None
-    #     delete_document(doc_id) -> None
-    #     clear_index() -> None
+    # Returns:
+    #     None
 
-    def __init__(self, persist_dir: str = "chroma_index"):
-        # Initialize embeddings and Chroma vectorstore
+    def __init__(self, vectorstore_path: str = "./chroma_db", embedding_model: str = "text-embedding-3-small"):
+        # Initialize Chroma vectorstore and embeddings
+        self.vectorstore_path = vectorstore_path
+        self.embeddings = OpenAIEmbeddings(model=embedding_model)
+
+        if os.path.exists(vectorstore_path):
+            # Load existing vectorstore
+            self.vstore = Chroma(persist_directory=vectorstore_path, embedding_function=self.embeddings)
+        else:
+            # Initialize new vectorstore
+            self.vstore = Chroma(persist_directory=vectorstore_path, embedding_function=self.embeddings)
+
+    def load_documents(self, paths: List[str]) -> List[Document]:
+        # Load documents from given file paths
         #
         # Args:
-        #     persist_dir: directory to persist Chroma vectorstore
+        #     paths: list of file paths (pdf, txt, md)
         #
-        self.embeddings = OpenAIEmbeddings()
-        self.persist_dir = persist_dir
-        self.vectorstore = Chroma(
-            persist_directory=self.persist_dir,
-            embedding_function=self.embeddings
-        )
+        # Returns:
+        #     List of Document objects
 
-    # -------------------------------
-    # Document loading
-    # -------------------------------
-    def load_documents(self, files: List[str]) -> List[Document]:
-        # Load documents from a list of file paths
-        #
-        # Supports PDF, DOCX, and TXT
-        #
-        loaded_docs = []
-        for file_path in files:
-            path = Path(file_path)
-            if not path.exists():
-                continue  # skip missing files
-
-            # PDF loader
-            if path.suffix.lower() == ".pdf":
-                loader = PyPDFLoader(str(path))
-            # DOCX loader
-            elif path.suffix.lower() in [".docx", ".doc"]:
-                loader = Docx2txtLoader(str(path))
-            # TXT loader
-            elif path.suffix.lower() == ".txt":
-                loader = TextLoader(str(path))
+        docs = []
+        for path in paths:
+            ext = os.path.splitext(path)[1].lower()
+            if ext == ".pdf":
+                loader = PyPDFLoader(path)
             else:
-                continue  # unsupported file
+                loader = TextLoader(path)
+            docs.extend(loader.load())
+        return docs
 
-            docs = loader.load()
-            loaded_docs.extend(docs)
-
-        return loaded_docs
-
-    # -------------------------------
-    # Document splitting
-    # -------------------------------
     def split_documents(self, docs: List[Document], method: str = "character") -> List[Document]:
-        # Split loaded documents into chunks
+        # Split documents into chunks
         #
         # Args:
-        #     docs: list of Documents
-        #     method: "character" or "markdown"
+        #     docs: list of Document objects
+        #     method: splitting method (character or markdown)
         #
-        split_docs = []
+        # Returns:
+        #     List of chunked Document objects
+
+        if method == "markdown":
+            splitter = MarkdownHeaderTextSplitter(chunk_size=500, chunk_overlap=50)
+        else:
+            splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+
+        all_chunks = []
         for doc in docs:
-            if method == "markdown":
-                splitter = MarkdownHeaderTextSplitter(chunk_size=1000, chunk_overlap=100)
-            else:
-                splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-
-            chunks = splitter.split_documents([doc])
-            split_docs.extend(chunks)
-
-        return split_docs
-
-    # -------------------------------
-    # Indexing / adding documents
-    # -------------------------------
-    def index_documents(self, docs: List[Document]):
-        # Index multiple documents in the vectorstore
-        #
-        # Args:
-        #     docs: list of Documents
-        #
-        self.vectorstore.add_documents(docs)
-        self.vectorstore.persist()  # save to disk
+            all_chunks.extend(splitter.split_documents([doc]))
+        return all_chunks
 
     def add_documents(self, docs: List[Document]):
-        # Alias for index_documents
-        self.index_documents(docs)
-
-    # -------------------------------
-    # Update / delete / clear
-    # -------------------------------
-    def update_document(self, doc: Document, doc_id: str):
-        # Update a document in vectorstore
-        # Requires a unique id field in metadata
+        # Add chunked documents to vectorstore and persist
         #
-        self.vectorstore.update_documents([doc], ids=[doc_id])
-        self.vectorstore.persist()
+        # Args:
+        #     docs: list of chunked Document objects
+        #
+        # Returns:
+        #     None
 
-    def delete_document(self, doc_id: str):
-        # Delete a document from vectorstore by id
-        self.vectorstore.delete(ids=[doc_id])
-        self.vectorstore.persist()
-
-    def clear_index(self):
-        # Clear entire vectorstore
-        self.vectorstore.delete()
-        self.vectorstore.persist()
+        if docs:
+            self.vstore.add_documents(docs)
+            self.vstore.persist()
