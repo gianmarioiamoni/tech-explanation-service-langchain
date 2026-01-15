@@ -1,25 +1,45 @@
 # ui/callbacks/rag_callbacks.py
 #
-# Callbacks for RAG document registry initialization
+# Callbacks for RAG initialization (document registry and vectorstore)
 #
 # Responsibilities:
 # - Initialize document registry on app startup
+# - Sync Chroma vectorstore from HF Hub on startup
 # - Load persistent list of uploaded documents
 # - Update UI with current document status
 
 from typing import Tuple, List
 from app.services.rag.document_registry import DocumentRegistry
+from app.services.rag.chroma_persistence import ChromaPersistence
 
-# Domain service instance
+# Domain service instances
 document_registry = DocumentRegistry()
+chroma_persistence = ChromaPersistence()
+
+
+def initialize_chroma_vectorstore() -> None:
+    # Initialize Chroma vectorstore by syncing from HF Hub
+    # Called once on app startup, before RAG registry initialization
+    #
+    # Returns:
+    #     None (sync happens in background)
+    
+    print(f"\n{'='*60}")
+    print(f"🔄 Initializing Chroma vectorstore...")
+    
+    # Sync from HF Hub (download if exists)
+    chroma_persistence.sync_from_hub()
+    
+    print(f"✅ Chroma vectorstore initialized")
+    print(f"{'='*60}\n")
 
 
 def initialize_rag_registry() -> Tuple[List[str], str]:
     # Initialize RAG document registry on app load
     #
     # Returns:
-        #     Tuple containing:
-        #       - List of uploaded filenames for gr.State
+    #     Tuple containing:
+    #       - List of uploaded filenames for gr.State
     #       - Status message for the UI
     
     print(f"\n{'='*60}")

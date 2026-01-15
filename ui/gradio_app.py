@@ -31,8 +31,11 @@ from ui.callbacks import (
     search_in_history,
 )
 from ui.callbacks.download_callbacks import download_chat
-from ui.callbacks.upload_callbacks import upload_documents, clear_rag_index  # NEW RAG callbacks
-from ui.callbacks.rag_callbacks import initialize_rag_registry  # RAG registry init
+from ui.callbacks.upload_callbacks import upload_documents, clear_rag_index  # RAG callbacks
+from ui.callbacks.rag_callbacks import (
+    initialize_chroma_vectorstore,
+    initialize_rag_registry,
+)  # RAG initialization
 
 # -------------------------------
 # UI Layout and Components
@@ -190,13 +193,21 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # Events
     # -------------------------------
 
-    # Initialization: Load history and RAG document registry
+    # Initialization: Load history, Chroma vectorstore, and RAG document registry
     demo.load(
         fn=initialize_history,
         inputs=None,
         outputs=[history_state, history_dropdown, delete_dropdown, search_box],
     )
     
+    # Initialize Chroma vectorstore from HF Hub (must happen before registry)
+    demo.load(
+        fn=initialize_chroma_vectorstore,
+        inputs=None,
+        outputs=None,
+    )
+    
+    # Initialize RAG document registry
     demo.load(
         fn=initialize_rag_registry,
         inputs=None,

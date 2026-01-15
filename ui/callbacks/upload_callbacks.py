@@ -14,10 +14,12 @@ from typing import List, Tuple
 
 from app.services.rag.rag_service import RAGService
 from app.services.rag.document_registry import DocumentRegistry
+from app.services.rag.chroma_persistence import ChromaPersistence
 
 # Domain service instances
 rag_service = RAGService()
 document_registry = DocumentRegistry()
+chroma_persistence = ChromaPersistence()
 
 # Supported file types
 SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".md", ".docx"]
@@ -59,6 +61,10 @@ def upload_documents(files: List[str], uploaded_state: List[str]) -> Tuple[List[
     for filename in indexed_files:
         document_registry.add_document(filename)
     
+    # Sync vectorstore to HF Hub (only if documents were indexed)
+    if indexed_files:
+        chroma_persistence.sync_to_hub()
+    
     # Load full registry for status message
     registry = document_registry.load_registry()
     status_message = document_registry.format_status(registry)
@@ -84,13 +90,16 @@ def clear_rag_index(uploaded_state: List[str]) -> Tuple[List[str], str]:
         print(f"\n{'='*60}")
         print(f"🗑️ User requested: Clear RAG index")
         
-        # Clear vectorstore
+        # Clear local vectorstore
         rag_service.clear_index()
         
         # Clear persistent registry
         document_registry.clear_registry()
         
-        print(f"✅ RAG index and document registry cleared successfully")
+        # Clear remote vectorstore on HF Hub
+        chroma_persistence.clear_remote_vectorstore()
+        
+        print(f"✅ RAG index, document registry, and remote vectorstore cleared")
         print(f"{'='*60}\n")
         return [], "🗑️ All documents removed from RAG index."
     except Exception as e:
