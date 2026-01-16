@@ -22,20 +22,38 @@ A **production-ready** AI service that generates clear, structured technical exp
 
 ---
 
-## 🔐 **Demo Access**
+## 🔐 **Authentication**
+
+This app supports **two authentication modes**:
+
+### **1. OAuth 2.0 (Recommended)**
+Login with your existing account:
+- 🔵 **Google** - Universal, most users already have an account
+- ⚫ **GitHub** - Perfect for developers
+- 🤗 **Hugging Face** - Native HF integration (optional)
+
+**Benefits:**
+- ✅ Personal quota tracking (20 req/day, 10k tokens/day per user)
+- ✅ Secure OAuth 2.0 standard
+- ✅ No shared credentials
+
+**Setup:** See [OAUTH_SETUP.md](OAUTH_SETUP.md) for configuration instructions.
+
+### **2. Basic Auth (Demo Fallback)**
+If no OAuth providers are configured:
 
 **Username:** `demo`  
 **Password:** `portfolio2026`
 
-*Portfolio/demo project with shared quota limits (20 requests, 10,000 tokens/day)*
+*Shared quota limits (20 requests, 10,000 tokens/day for all demo users)*
 
 ---
 
 ## ✨ Key Features
 
 ### 🔐 **Smart Quota Management**
-- **Basic Authentication**: Simple username/password access
-- **Shared Daily Limits**: 20 requests and 10,000 tokens per day
+- **Flexible Authentication**: OAuth 2.0 (Google/GitHub) or Basic Auth fallback
+- **Per-User Quotas**: 20 requests and 10,000 tokens per day per authenticated user
 - **Real-Time Tracking**: Visual progress bars showing remaining quota (🟢🟡🔴)
 - **Auto-Validation**: Input truncation to max 300 tokens with user warnings
 - **Cost Control**: Token counting with tiktoken for accurate OpenAI billing
