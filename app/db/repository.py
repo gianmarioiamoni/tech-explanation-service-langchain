@@ -1,7 +1,8 @@
-"""
-Repository layer for database operations.
-Provides CRUD operations for users, requests, and quotas.
-"""
+# app/db/repository.py
+#
+# Repository layer for database operations.
+# Provides CRUD operations for users, requests, and quotas.
+#
 
 from datetime import datetime, date
 from typing import Optional, List
@@ -12,7 +13,7 @@ from app.db.models import User, RequestLog, DailyQuota, QuotaStatus, QuotaConfig
 
 
 class QuotaRepository:
-    """Repository for quota management operations"""
+    # Repository for quota management operations
     
     def __init__(self):
         db_manager.initialize_schema()
@@ -21,7 +22,7 @@ class QuotaRepository:
     # ==================== User Operations ====================
     
     def create_user(self, user_id: str, hf_username: str) -> User:
-        """Create a new user"""
+        # Create a new user
         conn = db_manager.get_connection()
         try:
             conn.execute(
@@ -34,7 +35,7 @@ class QuotaRepository:
             conn.close()
     
     def get_user(self, user_id: str) -> Optional[User]:
-        """Get user by ID"""
+        # Get user by ID
         conn = db_manager.get_connection()
         try:
             cursor = conn.execute(
@@ -49,14 +50,14 @@ class QuotaRepository:
             conn.close()
     
     def get_or_create_user(self, user_id: str, hf_username: str) -> User:
-        """Get user or create if not exists"""
+        # Get user or create if not exists
         user = self.get_user(user_id)
         if not user:
             user = self.create_user(user_id, hf_username)
         return user
     
     def update_user_totals(self, user_id: str, requests_delta: int = 1, tokens_delta: int = 0):
-        """Update user total counts"""
+        # Update user total counts
         conn = db_manager.get_connection()
         try:
             conn.execute(
@@ -73,7 +74,7 @@ class QuotaRepository:
     # ==================== Request Log Operations ====================
     
     def log_request(self, log: RequestLog) -> int:
-        """Log a request and return its ID"""
+        # Log a request and return its ID
         conn = db_manager.get_connection()
         try:
             cursor = conn.execute(
@@ -91,7 +92,7 @@ class QuotaRepository:
             conn.close()
     
     def get_user_requests(self, user_id: str, limit: int = 100) -> List[RequestLog]:
-        """Get recent requests for a user"""
+        # Get recent requests for a user
         conn = db_manager.get_connection()
         try:
             cursor = conn.execute(
@@ -108,7 +109,7 @@ class QuotaRepository:
     # ==================== Daily Quota Operations ====================
     
     def get_daily_quota(self, user_id: str, target_date: Optional[date] = None) -> DailyQuota:
-        """Get or create daily quota for user"""
+        # Get or create daily quota for user
         if target_date is None:
             target_date = date.today()
         
@@ -134,7 +135,7 @@ class QuotaRepository:
             conn.close()
     
     def update_daily_quota(self, user_id: str, requests_delta: int = 1, tokens_delta: int = 0):
-        """Update daily quota counters"""
+        # Update daily quota counters
         today = date.today()
         conn = db_manager.get_connection()
         try:
@@ -154,7 +155,7 @@ class QuotaRepository:
             conn.close()
     
     def get_quota_status(self, user_id: str) -> QuotaStatus:
-        """Get current quota status for user"""
+        # Get current quota status for user
         quota = self.get_daily_quota(user_id)
         
         return QuotaStatus(
@@ -170,7 +171,7 @@ class QuotaRepository:
     # ==================== Cleanup Operations ====================
     
     def cleanup_old_requests(self, days_to_keep: int = 30):
-        """Delete request logs older than specified days"""
+        # Delete request logs older than specified days
         conn = db_manager.get_connection()
         try:
             cutoff_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)

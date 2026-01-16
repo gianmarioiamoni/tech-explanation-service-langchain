@@ -54,27 +54,27 @@ class QuotaStatus(BaseModel):
     
     @property
     def requests_percent(self) -> float:
-        """Percentage of requests used"""
+        # Percentage of requests used
         return (self.requests_used / self.requests_limit * 100) if self.requests_limit > 0 else 0
     
     @property
     def tokens_percent(self) -> float:
-        """Percentage of tokens used"""
+        # Percentage of tokens used
         return (self.tokens_used / self.tokens_limit * 100) if self.tokens_limit > 0 else 0
     
     @property
     def is_exhausted(self) -> bool:
-        """Check if quota is exhausted"""
+        # Check if quota is exhausted
         return self.requests_remaining <= 0 or self.tokens_remaining <= 0
     
     @property
     def is_warning_level(self) -> bool:
-        """Check if usage is at warning level (>80%)"""
+        # Check if usage is at warning level (>80%)
         return self.requests_percent > 80 or self.tokens_percent > 80
 
 
 class QuotaConfig(BaseModel):
-    """Quota limits configuration"""
+    # Quota limits configuration
     daily_requests_limit: int = 20
     daily_tokens_limit: int = 10000
     max_input_tokens: int = 300
