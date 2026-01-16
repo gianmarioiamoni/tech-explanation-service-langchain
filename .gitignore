@@ -33,3 +33,7 @@ htmlcov/
 chroma_db/
 *.sqlite3
 *.parquet
+
+# Quota system database (local only)
+data/
+*.db
