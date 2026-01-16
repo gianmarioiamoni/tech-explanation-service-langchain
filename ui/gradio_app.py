@@ -46,13 +46,55 @@ from ui.events import (
 # UI Composition
 # -------------------------------
 with gr.Blocks(title="Tech Explanation Service") as demo:
-    # Header
-    gr.Markdown(
-        "# 🎓 Tech Explanation Service\n"
-        "Enter one or more technical topics (separated by commas) \n"
-        "and receive a clear and structured explanation.\n\n"
-        "💡 **Demo Mode**: Using shared quota (20 requests, 10,000 tokens/day)"
-    )
+    # Inject Favicon
+    gr.HTML("""
+        <script>
+            // Add favicon dynamically
+            const addFavicon = () => {
+                // Remove existing favicons
+                document.querySelectorAll('link[rel*="icon"]').forEach(link => link.remove());
+                
+                // Add SVG favicon (modern browsers)
+                const svgIcon = document.createElement('link');
+                svgIcon.rel = 'icon';
+                svgIcon.type = 'image/svg+xml';
+                svgIcon.href = '/file=assets/logo.svg';
+                document.head.appendChild(svgIcon);
+                
+                // Add PNG fallback (older browsers)
+                const pngIcon = document.createElement('link');
+                pngIcon.rel = 'shortcut icon';
+                pngIcon.type = 'image/png';
+                pngIcon.href = '/file=assets/logo.png';
+                document.head.appendChild(pngIcon);
+            };
+            
+            // Execute on load and after Gradio is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', addFavicon);
+            } else {
+                addFavicon();
+            }
+            setTimeout(addFavicon, 500); // Ensure it runs after Gradio initialization
+        </script>
+    """, visible=False)
+    
+    # Header with Logo
+    gr.HTML("""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <img src="/file=assets/logo.svg" alt="Logo" style="width: 60px; height: 60px;">
+            <div>
+                <h1 style="margin: 0; font-size: 2em;">Tech Explanation Service</h1>
+                <p style="margin: 5px 0 0 0; color: #666;">
+                    Enter one or more technical topics (separated by commas) 
+                    and receive a clear and structured explanation.
+                </p>
+                <p style="margin: 5px 0 0 0; color: #666;">
+                    💡 <strong>Demo Mode</strong>: Using shared quota (20 requests, 10,000 tokens/day)
+                </p>
+            </div>
+        </div>
+    """)
     
     # -------------------------------
     # Create States
