@@ -94,16 +94,15 @@ class TokenCounter:
             return text[:estimated_chars], self.count_tokens(text[:estimated_chars])
     
     def count_tokens_for_messages(self, messages: list[dict]) -> int:
-        """
-        Count tokens for a list of chat messages.
-        Accounts for message formatting overhead.
+        # Count tokens for a list of chat messages.
+        # Accounts for message formatting overhead.
+        #
+        # Args:
+        #     messages: List of message dicts with 'role' and 'content'
+        #
+        # Returns:
+        #     Total token count including formatting overhead
         
-        Args:
-            messages: List of message dicts with 'role' and 'content'
-            
-        Returns:
-            Total token count including formatting overhead
-        """
         if not messages:
             return 0
         
