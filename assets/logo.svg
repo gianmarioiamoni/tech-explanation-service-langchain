@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="robot-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded background -->
+  <rect width="120" height="120" rx="24" fill="url(#bg-gradient)"/>
+  
+  <!-- Robot antenna -->
+  <line x1="60" y1="20" x2="60" y2="30" stroke="#c7d2fe" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="60" cy="18" r="4" fill="#fbbf24"/>
+  
+  <!-- Robot head -->
+  <rect x="40" y="30" width="40" height="35" rx="6" fill="url(#robot-gradient)"/>
+  
+  <!-- Robot eyes -->
+  <circle cx="50" cy="45" r="5" fill="#3b82f6"/>
+  <circle cx="50" cy="45" r="2.5" fill="#1e40af"/>
+  <circle cx="70" cy="45" r="5" fill="#3b82f6"/>
+  <circle cx="70" cy="45" r="2.5" fill="#1e40af"/>
+  
+  <!-- Robot mouth/speaker -->
+  <rect x="48" y="54" width="24" height="6" rx="3" fill="#6366f1" opacity="0.7"/>
+  <line x1="52" y1="54" x2="52" y2="60" stroke="#3b82f6" stroke-width="1"/>
+  <line x1="56" y1="54" x2="56" y2="60" stroke="#3b82f6" stroke-width="1"/>
+  <line x1="60" y1="54" x2="60" y2="60" stroke="#3b82f6" stroke-width="1"/>
+  <line x1="64" y1="54" x2="64" y2="60" stroke="#3b82f6" stroke-width="1"/>
+  <line x1="68" y1="54" x2="68" y2="60" stroke="#3b82f6" stroke-width="1"/>
+  
+  <!-- Robot body -->
+  <rect x="35" y="68" width="50" height="32" rx="6" fill="url(#robot-gradient)"/>
+  
+  <!-- Robot chest panel -->
+  <rect x="47" y="75" width="26" height="18" rx="3" fill="#6366f1" opacity="0.5"/>
+  <circle cx="52" cy="80" r="2" fill="#3b82f6"/>
+  <circle cx="60" cy="80" r="2" fill="#3b82f6"/>
+  <circle cx="68" cy="80" r="2" fill="#3b82f6"/>
+  <line x1="50" y1="86" x2="70" y2="86" stroke="#3b82f6" stroke-width="2"/>
+  <line x1="50" y1="89" x2="70" y2="89" stroke="#3b82f6" stroke-width="2"/>
+  
+  <!-- Robot arms -->
+  <rect x="20" y="72" width="12" height="22" rx="4" fill="url(#robot-gradient)"/>
+  <circle cx="26" cy="95" r="5" fill="#c7d2fe"/>
+  
+  <rect x="88" y="72" width="12" height="22" rx="4" fill="url(#robot-gradient)"/>
+  <circle cx="94" cy="95" r="5" fill="#c7d2fe"/>
+  
+  <!-- Robot legs -->
+  <rect x="42" y="100" width="12" height="10" rx="2" fill="#c7d2fe"/>
+  <rect x="66" y="100" width="12" height="10" rx="2" fill="#c7d2fe"/>
+</svg>
+
