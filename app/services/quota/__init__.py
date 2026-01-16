@@ -6,6 +6,7 @@ Provides token counting, rate limiting, and input validation for API cost contro
 from app.services.quota.token_counter import TokenCounter, token_counter
 from app.services.quota.rate_limiter import RateLimiter, rate_limiter, QuotaExceededError
 from app.services.quota.input_validator import InputValidator, input_validator, ValidationResult
+from app.services.quota.quota_aware_llm import QuotaAwareLLMService, quota_aware_llm
 
 __all__ = [
     "TokenCounter",
@@ -15,6 +16,8 @@ __all__ = [
     "QuotaExceededError",
     "InputValidator",
     "input_validator",
-    "ValidationResult"
+    "ValidationResult",
+    "QuotaAwareLLMService",
+    "quota_aware_llm"
 ]
 
