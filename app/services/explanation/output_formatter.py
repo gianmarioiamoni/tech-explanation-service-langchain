@@ -82,6 +82,15 @@ class OutputFormatter:
             if t in topic_contents:
                 if accumulated:  # Add separator between topics
                     accumulated += f"\n\n{'='*60}\n\n"
-                accumulated += f"{t}:\n\n{topic_contents[t]}"
+                
+                # Check if content already starts with topic name to avoid duplication
+                content = topic_contents[t]
+                content_start = content.strip()[:len(t)+2]  # topic + ":\n" or ": "
+                
+                # If content already starts with topic name, don't add it again
+                if content_start.lower().startswith(t.lower() + ":"):
+                    accumulated += content
+                else:
+                    accumulated += f"{t}:\n\n{content}"
         return accumulated
 

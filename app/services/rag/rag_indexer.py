@@ -107,12 +107,14 @@ class RAGIndexer:
             # Note: langchain-chroma auto-persists to persist_directory
             # No need to call .persist() manually
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[Document]:
+    def retrieve(self, query: str, top_k: int = 5, min_relevance: bool = True) -> List[Document]:
         # Retrieve relevant documents from vectorstore
         #
         # Args:
         #     query: search query or topic
         #     top_k: number of documents to retrieve
+        #     min_relevance: if True, only return docs with good relevance
+        #                   Uses Chroma's distance metric (<0.5 for L2 distance)
         #
         # Returns:
         #     List of relevant Document objects
@@ -120,11 +122,27 @@ class RAGIndexer:
         if not query or not query.strip():
             return []
         
-        retriever = self.vstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": top_k}
-        )
-        return retriever.invoke(query)
+        # Retrieve with similarity search and distance scores
+        results_with_scores = self.vstore.similarity_search_with_score(query, k=top_k)
+        
+        if not min_relevance:
+            # Return all results without filtering
+            return [doc for doc, score in results_with_scores]
+        
+        # Filter by relevance: Chroma L2 distance lower = more similar
+        # Typical range: 0.0-2.0 (lower is better)
+        # Threshold: < 0.5 means highly relevant, 0.5-1.5 medium, >1.5 low relevance
+        RELEVANCE_THRESHOLD = 1.5  # Lower = more strict, Higher = more permissive
+        
+        filtered_results = []
+        for doc, distance in results_with_scores:
+            if distance < RELEVANCE_THRESHOLD:
+                filtered_results.append(doc)
+                print(f"  ✅ Relevant (distance: {distance:.3f}): {doc.metadata.get('source', 'N/A')}")
+            else:
+                print(f"  ❌ Not relevant (distance: {distance:.3f}): {doc.metadata.get('source', 'N/A')}")
+        
+        return filtered_results
 
     def clear(self):
         # Clear the vectorstore by deleting all indexed documents

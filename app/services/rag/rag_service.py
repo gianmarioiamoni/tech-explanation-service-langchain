@@ -58,13 +58,13 @@ class RAGService:
             print(f"🌐 Mode: GENERIC LLM | Reason: No documents uploaded | Topic: '{topic}'")
             return self._explain_generic(topic), "generic"
 
-        # Step 2: Retrieve relevant documents
-        docs = self.indexer.retrieve(topic)
+        # Step 2: Retrieve relevant documents (with relevance filtering)
+        docs = self.indexer.retrieve(topic, min_relevance=True)
         
         if not docs:
             # No relevant chunks found → Generic LLM chain
             logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no relevant chunks found)")
-            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not covered in documents | Topic: '{topic}'")
+            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not relevant to documents | Topic: '{topic}'")
             return self._explain_generic(topic), "generic"
 
         # Step 3: Relevant chunks found → Use RAG chain
@@ -114,13 +114,13 @@ class RAGService:
                 yield accumulated, "generic"
             return
         
-        # Step 2: Retrieve relevant documents
-        docs = self.indexer.retrieve(topic)
+        # Step 2: Retrieve relevant documents (with relevance filtering)
+        docs = self.indexer.retrieve(topic, min_relevance=True)
         
         if not docs:
             # No relevant chunks found → Generic LLM chain (streaming)
             logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no relevant chunks found)")
-            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not covered in documents | Topic: '{topic}'")
+            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not relevant to documents | Topic: '{topic}'")
             accumulated = ""
             for chunk in self.explanation_service.explain_stream(topic):
                 accumulated = chunk  # Already accumulated by explain_stream
