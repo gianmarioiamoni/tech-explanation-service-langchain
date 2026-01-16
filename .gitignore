@@ -37,3 +37,4 @@ chroma_db/
 # Quota system database (local only)
 data/
 *.db
+# Test clean push - Fri Jan 16 17:36:41 CET 2026
