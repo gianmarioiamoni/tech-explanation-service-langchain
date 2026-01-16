@@ -20,6 +20,16 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+# Logo paths
+logo_svg_path = str(project_root / "assets" / "logo.svg")
+logo_png_path = str(project_root / "assets" / "logo.png")
+
+# Read logo SVG as base64 for inline embedding
+import base64
+with open(logo_svg_path, "rb") as f:
+    logo_svg_base64 = base64.b64encode(f.read()).decode("utf-8")
+logo_data_uri = f"data:image/svg+xml;base64,{logo_svg_base64}"
+
 import gradio as gr
 
 # Import UI component factories
@@ -47,10 +57,10 @@ from ui.events import (
 # -------------------------------
 with gr.Blocks(title="Tech Explanation Service") as demo:
     # Inject Favicon
-    gr.HTML("""
+    gr.HTML(f"""
         <script>
             // Add favicon dynamically
-            const addFavicon = () => {
+            const addFavicon = () => {{
                 // Remove existing favicons
                 document.querySelectorAll('link[rel*="icon"]').forEach(link => link.remove());
                 
@@ -58,31 +68,24 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 const svgIcon = document.createElement('link');
                 svgIcon.rel = 'icon';
                 svgIcon.type = 'image/svg+xml';
-                svgIcon.href = '/file=assets/logo.svg';
+                svgIcon.href = '{logo_data_uri}';
                 document.head.appendChild(svgIcon);
-                
-                // Add PNG fallback (older browsers)
-                const pngIcon = document.createElement('link');
-                pngIcon.rel = 'shortcut icon';
-                pngIcon.type = 'image/png';
-                pngIcon.href = '/file=assets/logo.png';
-                document.head.appendChild(pngIcon);
-            };
+            }};
             
             // Execute on load and after Gradio is ready
-            if (document.readyState === 'loading') {
+            if (document.readyState === 'loading') {{
                 document.addEventListener('DOMContentLoaded', addFavicon);
-            } else {
+            }} else {{
                 addFavicon();
-            }
+            }}
             setTimeout(addFavicon, 500); // Ensure it runs after Gradio initialization
         </script>
     """, visible=False)
     
     # Header with Logo
-    gr.HTML("""
+    gr.HTML(f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-            <img src="/file=assets/logo.svg" alt="Logo" style="width: 60px; height: 60px;">
+            <img src="{logo_data_uri}" alt="Logo" style="width: 60px; height: 60px;">
             <div>
                 <h1 style="margin: 0; font-size: 2em;">Tech Explanation Service</h1>
                 <p style="margin: 5px 0 0 0; color: #666;">
