@@ -9,6 +9,7 @@ from ui.events.rag_events import wire_rag_events
 from ui.events.explanation_events import wire_explanation_events
 from ui.events.history_events import wire_history_events
 from ui.events.download_events import wire_download_events
+from ui.events.auth_events import wire_auth_events
 
 __all__ = [
     "wire_initialization_events",
@@ -16,5 +17,6 @@ __all__ = [
     "wire_explanation_events",
     "wire_history_events",
     "wire_download_events",
+    "wire_auth_events",
 ]
 

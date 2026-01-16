@@ -29,6 +29,7 @@ from ui.components import (
     create_topic_section,
     create_buttons_section,
     create_history_section,
+    create_quota_section,
 )
 
 # Import event wiring functions
@@ -38,6 +39,7 @@ from ui.events import (
     wire_explanation_events,
     wire_history_events,
     wire_download_events,
+    wire_auth_events,
 )
 
 # -------------------------------
@@ -55,6 +57,9 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # Create States
     # -------------------------------
     history_state, rag_uploaded_state = create_shared_states()
+    
+    # Create Quota Section (includes user_session_state)
+    quota_display, user_session_state = create_quota_section()
     
     # -------------------------------
     # Layout
@@ -154,6 +159,13 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         download_file,
         topic_input,
         output_box,
+    )
+    
+    # Authentication and quota events
+    wire_auth_events(
+        demo,
+        user_session_state,
+        quota_display,
     )
 
 # Enable queue for streaming and cancels functionality

@@ -12,6 +12,10 @@ from ui.callbacks.history_callbacks import (
     clear_all_chats,
 )
 from ui.callbacks.search_callbacks import search_in_history
+from ui.callbacks.auth_callbacks import (
+    initialize_user_session,
+    update_quota_display,
+)
 
 __all__ = [
     "explain_topic_stream",
@@ -20,5 +24,7 @@ __all__ = [
     "delete_selected_chat",
     "clear_all_chats",
     "search_in_history",
+    "initialize_user_session",
+    "update_quota_display",
 ]
 
