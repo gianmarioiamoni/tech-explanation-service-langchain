@@ -46,42 +46,48 @@ def explain_topic_stream(topic: str, history, history_mode: str, rag_uploaded_st
 
     topics = output_formatter.parse_topics(topic_clean)
     topic_contents = {}
+    topic_modes = {}  # Track mode for each topic
     aggregate_mode = history_mode == "Aggregate into one chat"
 
-    # Track modes for badge display
-    modes = []
-    
+    # Stream each topic
     for topic_name in topics:
-        # Step 1: Use RAG service (Conditional RAG logic handles everything)
-        # - If docs uploaded + topic covered → RAG chain
-        # - Otherwise → Generic LLM chain
-        explanation, mode = rag_service.explain_topic(topic_name)
-        modes.append(mode)
+        # Use RAGService streaming (Conditional RAG logic handles everything)
+        # - If docs uploaded + topic covered → RAG chain (streaming)
+        # - Otherwise → Generic LLM chain (streaming)
         
-        # Already sanitized by RAG service
-        # (but sanitize again just in case for consistency)
-        explanation = output_formatter.sanitize_output(explanation)
-        topic_contents[topic_name] = explanation
-
-        # Step 3: Prepare text for streaming with provisional badge
-        if aggregate_mode:
-            accumulated_raw = output_formatter.aggregate_topics_output(topics, topic_contents)
-        else:
-            accumulated_raw = f"{topic_name}:\n\n{explanation}"
+        accumulated_for_topic = ""
+        mode = None
         
-        # Add provisional badge during streaming (will be updated at end)
-        streaming_badge = "⏳ Generating...\n\n"
-        streamed_output = streaming_badge + accumulated_raw
-
-        yield history, streamed_output, gr.update(), gr.update()
+        for accumulated_chunk, chunk_mode in rag_service.explain_topic_stream(topic_name):
+            accumulated_for_topic = accumulated_chunk
+            mode = chunk_mode
+            
+            # Store partial result
+            topic_contents[topic_name] = accumulated_for_topic
+            topic_modes[topic_name] = mode
+            
+            # Prepare text for streaming
+            if aggregate_mode:
+                accumulated_raw = output_formatter.aggregate_topics_output(topics, topic_contents)
+            else:
+                accumulated_raw = f"{topic_name}:\n\n{accumulated_for_topic}"
+            
+            # Add provisional badge during streaming
+            streaming_badge = "⏳ Generating...\n\n"
+            streamed_output = streaming_badge + accumulated_raw
+            
+            yield history, streamed_output, gr.update(), gr.update()
+        
+        # Sanitize final output for this topic
+        topic_contents[topic_name] = output_formatter.sanitize_output(accumulated_for_topic)
 
     # Final aggregation
     final_text = output_formatter.aggregate_topics_output(topics, topic_contents)
     
     # Add badge based on mode
     # If all topics used RAG, show RAG badge; if any used generic, show generic badge
-    used_rag = any(mode == "rag" for mode in modes)
-    used_generic = any(mode == "generic" for mode in modes)
+    used_rag = any(mode == "rag" for mode in topic_modes.values())
+    used_generic = any(mode == "generic" for mode in topic_modes.values())
     
     if used_rag and not used_generic:
         badge = "🧠 Answer generated using your documents\n\n"

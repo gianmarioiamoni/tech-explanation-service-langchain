@@ -27,12 +27,14 @@ class RAGService:
     def __init__(self):
         self.indexer = RAGIndexer()              # Handles indexing & vector store
         self.formatter = OutputFormatter()       # Sanitizes output
+        from app.services.explanation.explanation_service import ExplanationService
+        self.explanation_service = ExplanationService()  # For generic LLM fallback
 
     # -------------------------------
-    # Context-aware explanation
+    # Context-aware explanation (non-streaming)
     # -------------------------------
     def explain_topic(self, topic: str, strategy: str = "document_stuff") -> Tuple[str, str]:
-        # Generate a topic explanation using RAG if possible
+        # Generate a topic explanation using RAG if possible (non-streaming)
         #
         # Logic flow:
         # 1. Check: documents uploaded in vectorstore?
@@ -84,6 +86,69 @@ class RAGService:
         result = chain.invoke(lcel_input)
         
         return result, "rag"  # Already sanitized by chain
+    
+    # -------------------------------
+    # Context-aware explanation (STREAMING)
+    # -------------------------------
+    def explain_topic_stream(self, topic: str, strategy: str = "document_stuff"):
+        # Generate a topic explanation using RAG if possible (with streaming)
+        #
+        # Yields chunks of text as they are generated for real-time display
+        #
+        # Args:
+        #     topic: User-provided technical topic
+        #     strategy: RAG strategy ("document_stuff" or "map_reduce")
+        #
+        # Yields:
+        #     Tuple of (accumulated_text, mode)
+        #     mode: "rag" if using documents, "generic" if using general knowledge
+        
+        # Step 1: Check if vectorstore has any documents
+        if not self.has_documents():
+            # No documents uploaded → Generic LLM chain (streaming)
+            logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no documents uploaded)")
+            print(f"🌐 Mode: GENERIC LLM | Reason: No documents uploaded | Topic: '{topic}'")
+            accumulated = ""
+            for chunk in self.explanation_service.explain_stream(topic):
+                accumulated = chunk  # Already accumulated by explain_stream
+                yield accumulated, "generic"
+            return
+        
+        # Step 2: Retrieve relevant documents
+        docs = self.indexer.retrieve(topic)
+        
+        if not docs:
+            # No relevant chunks found → Generic LLM chain (streaming)
+            logger.info(f"🌐 Topic '{topic}': Using GENERIC LLM (no relevant chunks found)")
+            print(f"🌐 Mode: GENERIC LLM | Reason: Topic not covered in documents | Topic: '{topic}'")
+            accumulated = ""
+            for chunk in self.explanation_service.explain_stream(topic):
+                accumulated = chunk  # Already accumulated by explain_stream
+                yield accumulated, "generic"
+            return
+        
+        # Step 3: Relevant chunks found → Use RAG chain (streaming)
+        logger.info(f"🧠 Topic '{topic}': Using RAG (found {len(docs)} relevant chunks)")
+        print(f"\n{'='*60}")
+        print(f"🧠 Mode: RAG | Chunks: {len(docs)} | Topic: '{topic}'")
+        print(f"{'='*60}")
+        
+        # Show retrieved context for debugging
+        print(f"📄 Retrieved Context:")
+        for i, doc in enumerate(docs, 1):
+            preview = doc.page_content[:150].replace('\n', ' ')
+            source = doc.metadata.get('source', 'unknown')
+            print(f"  [{i}] {source}: {preview}...")
+        print(f"{'='*60}\n")
+        
+        chain = get_chain(strategy)
+        lcel_input = {"topic": topic}
+        
+        # Stream chunks from RAG chain
+        accumulated = ""
+        for chunk in chain.stream(lcel_input):
+            accumulated += chunk
+            yield accumulated, "rag"
 
     def _explain_generic(self, topic: str) -> str:
         # Fallback to generic LLM explanation (no RAG)

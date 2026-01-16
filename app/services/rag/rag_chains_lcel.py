@@ -57,6 +57,9 @@ def format_docs(docs: List[Document]) -> str:
 
 def build_document_stuff_chain():
     # Build proper LCEL chain with separated topic and context
+    #
+    # Note: Sanitization removed from chain to preserve streaming.
+    # Output should be sanitized by the caller if needed.
     
     return (
         # Step 1: Create parallel branches
@@ -66,8 +69,7 @@ def build_document_stuff_chain():
         }
         # Step 2: Pass to RAG chain (expects {topic, context})
         | rag_explanation_chain
-        # Step 3: Sanitize output
-        | RunnableLambda(formatter.sanitize_output)
+        # Note: NO sanitization here to preserve streaming
     )
 
 document_stuff_chain = build_document_stuff_chain()
@@ -111,10 +113,9 @@ def build_map_reduce_chain():
         combined = "\n\n---\n\n".join(results)
         return combined
     
-    return (
-        RunnableLambda(map_reduce_logic)
-        | RunnableLambda(formatter.sanitize_output)
-    )
+    # Note: Sanitization removed to preserve streaming
+    # Output should be sanitized by the caller if needed
+    return RunnableLambda(map_reduce_logic)
 
 map_reduce_chain = build_map_reduce_chain()
 
