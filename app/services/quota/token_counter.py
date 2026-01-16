@@ -1,7 +1,8 @@
-"""
-Token counting service using tiktoken.
-Provides accurate token counting for OpenAI models to prevent quota overruns.
-"""
+# app/services/quota/token_counter.py
+#
+# Token counting service using tiktoken.
+# Provides accurate token counting for OpenAI models to prevent quota overruns.
+#
 
 import tiktoken
 from typing import Optional
@@ -11,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class TokenCounter:
-    """Service for counting tokens in text using tiktoken"""
+    # Service for counting tokens in text using tiktoken
     
     # Token counting defaults
     DEFAULT_MODEL = "gpt-4o-mini"
     CHARS_PER_TOKEN_ESTIMATE = 4  # Conservative estimate for pre-checks
     
     def __init__(self, model: str = DEFAULT_MODEL):
-        """Initialize token counter for specific model"""
+        # Initialize token counter for specific model
         self.model = model
         try:
             self.encoding = tiktoken.encoding_for_model(model)
@@ -27,15 +28,14 @@ class TokenCounter:
             self.encoding = tiktoken.get_encoding("cl100k_base")
     
     def count_tokens(self, text: str) -> int:
-        """
-        Count tokens in text using tiktoken.
+        # Count tokens in text using tiktoken.
+        #
+        # Args:
+        #     text: Input text to count tokens for
+        #
+        # Returns:
+        #     Number of tokens in the text
         
-        Args:
-            text: Input text to count tokens for
-            
-        Returns:
-            Number of tokens in the text
-        """
         if not text:
             return 0
         
@@ -48,31 +48,29 @@ class TokenCounter:
             return self.estimate_tokens_from_chars(text)
     
     def estimate_tokens_from_chars(self, text: str) -> int:
-        """
-        Estimate token count from character count.
-        Conservative estimate: 1 token per 4 characters.
+        # Estimate token count from character count.
+        # Conservative estimate: 1 token per 4 characters.
+        #
+        # Args:
+        #     text: Input text
+        #
+        # Returns:
+        #     Estimated token count
         
-        Args:
-            text: Input text
-            
-        Returns:
-            Estimated token count
-        """
         if not text:
             return 0
         return len(text) // self.CHARS_PER_TOKEN_ESTIMATE + 1
     
     def truncate_to_token_limit(self, text: str, max_tokens: int) -> tuple[str, int]:
-        """
-        Truncate text to fit within token limit.
+        # Truncate text to fit within token limit.
+        #
+        # Args:
+        #     text: Input text to truncate
+        #     max_tokens: Maximum number of tokens allowed
+        #
+        # Returns:
+        #     Tuple of (truncated_text, actual_token_count)
         
-        Args:
-            text: Input text to truncate
-            max_tokens: Maximum number of tokens allowed
-            
-        Returns:
-            Tuple of (truncated_text, actual_token_count)
-        """
         if not text:
             return "", 0
         
