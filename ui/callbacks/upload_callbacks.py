@@ -12,14 +12,11 @@ import os
 from pathlib import Path
 from typing import List, Tuple
 
-from app.services.rag.rag_service import RAGService
-from app.services.rag.document_registry import DocumentRegistry
-from app.services.rag.chroma_persistence import ChromaPersistence
-
-# Domain service instances
-rag_service = RAGService()
-document_registry = DocumentRegistry()
-chroma_persistence = ChromaPersistence()
+from ui.callbacks.shared_services import (
+    rag_service,
+    document_registry,
+    chroma_persistence,
+)  # Shared instances (singleton)
 
 # Supported file types
 SUPPORTED_EXTENSIONS = [".pdf", ".txt", ".md", ".docx"]

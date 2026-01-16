@@ -11,12 +11,12 @@
 import gradio as gr
 from app.services.explanation import ExplanationService, OutputFormatter
 from app.services.history import HistoryRepository, HistoryFormatter
-from app.services.rag.rag_service import RAGService
 from ui.utils.ui_messages import get_history_info_message
+from ui.callbacks.shared_services import rag_service  # Shared instance
 
 # Domain service instances
 explanation_service = ExplanationService()
-rag_service = RAGService()             # RAG context-aware
+# rag_service imported from shared_services (singleton)
 output_formatter = OutputFormatter()
 history_repository = HistoryRepository()
 history_formatter = HistoryFormatter()

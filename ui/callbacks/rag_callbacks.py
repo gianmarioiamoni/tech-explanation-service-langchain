@@ -9,12 +9,10 @@
 # - Update UI with current document status
 
 from typing import Tuple, List
-from app.services.rag.document_registry import DocumentRegistry
-from app.services.rag.chroma_persistence import ChromaPersistence
-
-# Domain service instances
-document_registry = DocumentRegistry()
-chroma_persistence = ChromaPersistence()
+from ui.callbacks.shared_services import (
+    document_registry,
+    chroma_persistence,
+)  # Shared instances (singleton)
 
 
 def initialize_chroma_vectorstore() -> None:
