@@ -134,6 +134,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
         delete_dropdown,
         download_accordion,
         download_file,
+        user_session_state,
+        quota_display,
     )
     
     # History management events

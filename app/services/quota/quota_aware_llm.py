@@ -4,7 +4,7 @@
 # Integrates quota management with LLM explanation services.
 #
 
-from typing import Generator, Tuple, Optional
+from typing import Generator, Tuple, Optional, TYPE_CHECKING
 import logging
 
 from app.services.quota import (
@@ -16,23 +16,28 @@ from app.services.quota import (
 from app.services.explanation import ExplanationService
 from app.db import QuotaStatus
 
+if TYPE_CHECKING:
+    from app.services.rag import RAGService
+
 logger = logging.getLogger(__name__)
 
 
 class QuotaAwareLLMService:
     # LLM service with integrated quota management
-    # Wraps ExplanationService to add quota checks and tracking
+    # Wraps ExplanationService and optionally RAGService to add quota checks and tracking
     
     def __init__(
         self,
         explanation_service: Optional[ExplanationService] = None,
         rate_limiter_service: Optional[RateLimiter] = None,
-        validator: Optional[InputValidator] = None
+        validator: Optional[InputValidator] = None,
+        rag_service: Optional['RAGService'] = None
     ):
         self.explanation_service = explanation_service or ExplanationService()
         self.rate_limiter = rate_limiter_service or rate_limiter
         self.validator = validator or input_validator
         self.token_counter = token_counter
+        self._rag_service = rag_service
     
     def explain_with_quota(
         self,

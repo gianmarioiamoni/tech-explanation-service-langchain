@@ -9,13 +9,14 @@
 # - Manage streaming and button states
 
 import gradio as gr
-from ui.callbacks import explain_topic_stream
+from ui.callbacks import explain_topic_with_quota_stream
 
 
 def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, clear_btn,
                             history_state, history_mode, rag_uploaded_state, output_box,
-                            history_dropdown, delete_dropdown, download_accordion, download_file):
-    # Wire all explanation-related events with streaming support
+                            history_dropdown, delete_dropdown, download_accordion, download_file,
+                            user_session, quota_display):
+    # Wire all explanation-related events with streaming support and quota management
     #
     # Args:
     #     explain_btn: gr.Button for triggering explanation
@@ -31,6 +32,8 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
     #     delete_dropdown: gr.Dropdown for delete selection
     #     download_accordion: gr.Accordion for download format selection
     #     download_file: gr.File for file download
+    #     user_session: gr.State for user session (with user_id)
+    #     quota_display: gr.Markdown for quota status display
     
     # -------------------------------
     # Explain button click
@@ -42,9 +45,9 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
     )
     
     click_stream = click_enable.then(
-        fn=explain_topic_stream,
-        inputs=[topic_input, history_state, history_mode, rag_uploaded_state],
-        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
+        fn=explain_topic_with_quota_stream,
+        inputs=[topic_input, history_state, history_mode, user_session, rag_uploaded_state],
+        outputs=[history_state, output_box, quota_display, history_dropdown, delete_dropdown],
     )
     
     click_disable = click_stream.then(
@@ -63,9 +66,9 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
     )
     
     submit_stream = submit_enable.then(
-        fn=explain_topic_stream,
-        inputs=[topic_input, history_state, history_mode, rag_uploaded_state],
-        outputs=[history_state, output_box, history_dropdown, delete_dropdown],
+        fn=explain_topic_with_quota_stream,
+        inputs=[topic_input, history_state, history_mode, user_session, rag_uploaded_state],
+        outputs=[history_state, output_box, quota_display, history_dropdown, delete_dropdown],
     )
     
     submit_disable = submit_stream.then(

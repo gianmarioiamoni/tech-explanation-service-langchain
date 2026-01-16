@@ -5,6 +5,7 @@
 # This package contains all Gradio event callbacks organized by functionality
 
 from ui.callbacks.explanation_callbacks import explain_topic_stream
+from ui.callbacks.explanation_callbacks_quota import explain_topic_with_quota_stream
 from ui.callbacks.history_callbacks import (
     initialize_history,
     load_selected_chat,
@@ -19,6 +20,7 @@ from ui.callbacks.auth_callbacks import (
 
 __all__ = [
     "explain_topic_stream",
+    "explain_topic_with_quota_stream",
     "initialize_history",
     "load_selected_chat",
     "delete_selected_chat",
