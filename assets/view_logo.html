@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Explanation Service - Logo Preview</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .logo-display {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: inline-block;
+        }
+        img, object {
+            display: block;
+            margin: 0 auto;
+        }
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .button-secondary {
+            background: #6366f1;
+        }
+        canvas {
+            display: none;
+        }
+        .instructions {
+            text-align: left;
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .instructions ol {
+            padding-left: 20px;
+        }
+        .instructions code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Tech Explanation Service</h1>
+        <p class="subtitle">Logo 120x120 px</p>
+        
+        <div class="logo-display">
+            <object id="logo-svg" data="logo.svg" type="image/svg+xml" width="120" height="120"></object>
+        </div>
+        
+        <div class="info">
+            <strong>📐 Dimensions:</strong> 120 × 120 pixels<br>
+            <strong>🎨 Format:</strong> SVG (Scalable Vector Graphics)<br>
+            <strong>💾 File:</strong> assets/logo.svg
+        </div>
+        
+        <a href="logo.svg" download="tech-explanation-logo.svg" class="button">
+            ⬇️ Download SVG
+        </a>
+        <button onclick="convertToPNG()" class="button button-secondary">
+            🖼️ Convert to PNG
+        </button>
+        
+        <canvas id="canvas" width="120" height="120"></canvas>
+        
+        <div class="instructions">
+            <h3>📝 How to Get PNG Version</h3>
+            
+            <p><strong>Method 1: Browser Conversion (Easiest)</strong></p>
+            <ol>
+                <li>Click <strong>"Convert to PNG"</strong> button above</li>
+                <li>Right-click on the PNG image that appears</li>
+                <li>Select "Save Image As..." → Save as <code>logo.png</code></li>
+            </ol>
+            
+            <p><strong>Method 2: Python Script</strong></p>
+            <ol>
+                <li>Install dependencies: <code>pip install cairosvg pillow</code></li>
+                <li>Run: <code>python scripts/generate_logo_png.py</code></li>
+                <li>Find PNG at: <code>assets/logo.png</code></li>
+            </ol>
+            
+            <p><strong>Method 3: Online Converter</strong></p>
+            <ol>
+                <li>Visit: <a href="https://cloudconvert.com/svg-to-png" target="_blank">cloudconvert.com/svg-to-png</a></li>
+                <li>Upload <code>assets/logo.svg</code></li>
+                <li>Set size to 120×120 px</li>
+                <li>Download PNG</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function convertToPNG() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const svg = document.getElementById('logo-svg');
+            
+            // Get SVG data
+            fetch('logo.svg')
+                .then(response => response.text())
+                .then(svgData => {
+                    // Create a blob from SVG
+                    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Load SVG into an image
+                    const img = new Image();
+                    img.onload = function() {
+                        // Draw to canvas
+                        ctx.drawImage(img, 0, 0, 120, 120);
+                        
+                        // Convert to PNG and download
+                        canvas.toBlob(function(blob) {
+                            const link = document.createElement('a');
+                            link.download = 'tech-explanation-logo.png';
+                            link.href = URL.createObjectURL(blob);
+                            link.click();
+                            
+                            // Show success message
+                            alert('✅ PNG downloaded successfully!\n\nFile: tech-explanation-logo.png\nSize: 120×120 px');
+                        }, 'image/png');
+                        
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                })
+                .catch(error => {
+                    console.error('Error converting SVG:', error);
+                    alert('❌ Error converting SVG to PNG. Try Method 2 or 3 from instructions below.');
+                });
+        }
+    </script>
+</body>
+</html>
+
