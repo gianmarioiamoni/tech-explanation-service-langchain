@@ -56,32 +56,6 @@ from ui.events import (
 # UI Composition
 # -------------------------------
 with gr.Blocks(title="Tech Explanation Service") as demo:
-    # Inject Favicon
-    gr.HTML(f"""
-        <script>
-            // Add favicon dynamically
-            const addFavicon = () => {{
-                // Remove existing favicons
-                document.querySelectorAll('link[rel*="icon"]').forEach(link => link.remove());
-                
-                // Add SVG favicon (modern browsers)
-                const svgIcon = document.createElement('link');
-                svgIcon.rel = 'icon';
-                svgIcon.type = 'image/svg+xml';
-                svgIcon.href = '{logo_data_uri}';
-                document.head.appendChild(svgIcon);
-            }};
-            
-            // Execute on load and after Gradio is ready
-            if (document.readyState === 'loading') {{
-                document.addEventListener('DOMContentLoaded', addFavicon);
-            }} else {{
-                addFavicon();
-            }}
-            setTimeout(addFavicon, 500); // Ensure it runs after Gradio initialization
-        </script>
-    """, visible=False)
-    
     # Header with Logo
     gr.HTML(f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
