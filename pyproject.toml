@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tech-explanation-service"
+version = "0.1.0"
+description = "Portfolio-ready LangChain service for technical explanations"
+requires-python = ">=3.11"
+
+dependencies = [
+  "langchain>=0.2",
+  "langchain-openai>=0.1",
+  "openai>=1.0",
+  "python-dotenv",
+  "fastapi",
+  "uvicorn[standard]",
+  "gradio>=6.0",
+  "ipykernel",
+  "pytest>=7.0",
+  "pytest-asyncio"
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.setuptools.package-data]
+app = ["**/*.txt", "**/*.md"]

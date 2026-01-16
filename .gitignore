@@ -1,0 +1,39 @@
+# Environment variables (NEVER commit)
+.env
+.env.local
+.env.*.local
+**/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.cursor/
+.idea/
+
+# Conda
+.conda/
+
+# pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Vector Database (local only - regenerate per environment)
+chroma_db/
+*.sqlite3
+*.parquet
+
+# Quota system database (local only)
+data/
+*.db
