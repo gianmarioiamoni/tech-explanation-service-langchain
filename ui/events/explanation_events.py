@@ -12,6 +12,30 @@ import gradio as gr
 from ui.callbacks import explain_topic_with_quota_stream
 
 
+def _refresh_dropdowns_after_stream(history):
+    # Refresh dropdowns after streaming completes
+    # Workaround for Gradio 6.3 bug where 'info' parameter doesn't update during streaming
+    #
+    # Args:
+    #     history: Updated history list
+    #
+    # Returns:
+    #     Tuple of (history_dropdown_update, delete_dropdown_update)
+    
+    from app.services.history import HistoryFormatter
+    from ui.utils.ui_messages import get_history_info_message
+    
+    formatter = HistoryFormatter()
+    radio_choices, _ = formatter.create_history_choices(history)
+    delete_choices = formatter.create_delete_choices(history)
+    info_msg = get_history_info_message(len(history))
+    
+    return (
+        gr.update(choices=radio_choices, value=None, info=info_msg),
+        gr.update(choices=delete_choices)
+    )
+
+
 def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, clear_btn,
                             history_state, history_mode, rag_uploaded_state, output_box,
                             history_dropdown, delete_dropdown, download_accordion, download_file,
@@ -50,7 +74,14 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
         outputs=[history_state, output_box, quota_display, history_dropdown, delete_dropdown],
     )
     
-    click_disable = click_stream.then(
+    # Force dropdown re-render after streaming completes (workaround for Gradio 6.3 bug)
+    click_refresh = click_stream.then(
+        fn=_refresh_dropdowns_after_stream,
+        inputs=[history_state],
+        outputs=[history_dropdown, delete_dropdown],
+    )
+    
+    click_disable = click_refresh.then(
         fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
         inputs=None,
         outputs=[stop_btn, download_btn],
@@ -71,7 +102,14 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
         outputs=[history_state, output_box, quota_display, history_dropdown, delete_dropdown],
     )
     
-    submit_disable = submit_stream.then(
+    # Force dropdown re-render after streaming completes (workaround for Gradio 6.3 bug)
+    submit_refresh = submit_stream.then(
+        fn=_refresh_dropdowns_after_stream,
+        inputs=[history_state],
+        outputs=[history_dropdown, delete_dropdown],
+    )
+    
+    submit_disable = submit_refresh.then(
         fn=lambda: (gr.update(interactive=False), gr.update(interactive=True)),
         inputs=None,
         outputs=[stop_btn, download_btn],
@@ -84,7 +122,7 @@ def wire_explanation_events(explain_btn, topic_input, stop_btn, download_btn, cl
         fn=lambda: gr.update(interactive=False),
         inputs=None,
         outputs=[stop_btn],
-        cancels=[click_stream, submit_stream],
+        cancels=[click_stream, submit_stream, click_refresh, submit_refresh],
     )
     
     stop_click.then(
