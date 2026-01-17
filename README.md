@@ -13,9 +13,6 @@ license: mit
 
 # 🤖 Tech Explanation Service
 
-<img width="1527" height="885" alt="01 - Homepage" src="https://github.com/user-attachments/assets/b07792fb-a13e-4aff-a97c-a164689a8412" />
-
-
 A **production-ready** AI service that generates clear, structured technical explanations using **LangChain LCEL**, **OpenAI GPT-4o-mini**, and **Conditional RAG** (Retrieval Augmented Generation).
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
@@ -35,18 +32,17 @@ A **production-ready** AI service that generates clear, structured technical exp
 
 ## ✨ Key Features
 
-### 🔐 **Smart Quota Management**
-- **Shared Demo Mode**: No authentication required
-- **Shared Daily Limits**: 20 requests and 10,000 tokens per day (shared by all users)
-- **Real-Time Tracking**: Visual progress bars showing remaining quota (🟢🟡🔴)
-- **Auto-Validation**: Input truncation to max 300 tokens with user warnings
-- **Cost Control**: Token counting with tiktoken for accurate OpenAI billing
-- **Usage Analytics**: Detailed request logging with timestamp, topic, and token counts
-
 ### 🎯 Conditional RAG (Hybrid AI)
 - **Intelligent Context Switching**: Uses uploaded documentation when relevant, falls back to general LLM knowledge when not
 - **Always Provides Value**: Never returns "I don't know" — adapts to available context
 - **Production Pattern**: Same approach used by ChatGPT Enterprise, Notion AI, and GitHub Copilot
+
+  
+  <img width="1006" height="885" alt="02 - General MML answer" src="https://github.com/user-attachments/assets/11ee9f15-6115-48eb-b407-852129a2b0ae" />
+
+  
+  <img width="1525" height="845" alt="04 - RAG based answer" src="https://github.com/user-attachments/assets/05a8cc51-badf-40fe-a915-023e8c8feddb" />
+
 
 ### 📚 Advanced History Management
 - **Persistent Storage**: Chat history saved to Hugging Face Hub with write permissions
@@ -54,6 +50,10 @@ A **production-ready** AI service that generates clear, structured technical exp
 - **Full-Text Search**: Find past explanations instantly
 - **Date-Based Aggregation**: View all chats from a specific day
 - **Selective Deletion**: Remove unwanted conversations
+  
+
+  <img width="524" height="845" alt="06 - Chat History" src="https://github.com/user-attachments/assets/659e3b89-57f9-4ce8-8cef-7c2714bb0469" />
+
 
 ### 🚀 Real-Time Streaming
 - **Progressive Output**: See explanations generate token-by-token
@@ -65,12 +65,29 @@ A **production-ready** AI service that generates clear, structured technical exp
 - **Professional Formatting**: Clean layouts with proper typography (ReportLab for PDF)
 - **One-Click Export**: Easy format selection with accordion menu
 
+  <img width="1010" height="443" alt="07 - Download" src="https://github.com/user-attachments/assets/f88caef5-e399-4cc0-8278-955795c9517f" />
+
+
 ### 🧠 Multi-Topic Processing
 - **Batch Explanations**: Handle multiple topics in one request (comma-separated)
 - **Aggregation Modes**:
   - **Single Chat**: Combine all topics into one explanation
   - **Separate Chats**: Save each topic independently
 - **Visual Separators**: Clear topic boundaries with dividers
+
+  <img width="1006" height="885" alt="03 - Multiple topics 1 chat" src="https://github.com/user-attachments/assets/bbf3c188-1748-430b-a9d4-26ac747df361" />
+
+
+### 🔐 **Smart Quota Management**
+- **Shared Demo Mode**: No authentication required
+- **Shared Daily Limits**: 20 requests and 10,000 tokens per day (shared by all users)
+- **Real-Time Tracking**: Visual progress bars showing remaining quota (🟢🟡🔴)
+- **Auto-Validation**: Input truncation to max 300 tokens with user warnings
+- **Cost Control**: Token counting with tiktoken for accurate OpenAI billing
+- **Usage Analytics**: Detailed request logging with timestamp, topic, and token counts
+
+  <img width="524" height="845" alt="05 - Quota details" src="https://github.com/user-attachments/assets/f889d035-b4c7-451d-b21b-6de976ead005" />
+
 
 ### 🏗️ Clean Architecture
 - **Domain-Driven Design**: Services organized by domain (explanation, history, RAG)
