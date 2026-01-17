@@ -209,11 +209,13 @@ def explain_topic_with_quota_stream(
     if aggregate_mode:
         # Aggregate mode: save all topics in one entry, separated by comma
         history = history_repository.add_to_history(", ".join(topics), final_output, history)
+        logger.info(f"📚 History updated (aggregate mode): {len(history)} items")
     else:
         # Separate mode: save each topic as individual entry
         for t in topics:
             individual_output = badge + topic_contents[t]
             history = history_repository.add_to_history(t, individual_output, history)
+        logger.info(f"📚 History updated (separate mode): {len(history)} items")
     
     # Update dropdowns
     radio_choices, _ = history_formatter.create_history_choices(history)
