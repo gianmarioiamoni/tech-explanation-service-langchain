@@ -27,23 +27,23 @@ def create_quota_section() -> Tuple[gr.Markdown, gr.State]:
 
 
 def _get_initial_quota_message() -> str:
-    # Get initial quota message for unauthenticated users
+    # Get initial quota message for shared demo mode
     #
     # Returns:
     #     Initial quota display message
     
     return """
-### 🔐 Authentication Required
+### ⏳ Loading Quota Status...
 
-Please log in with your Hugging Face account to use this service.
+Fetching current usage information...
 
-**Daily Quota Limits:**
+**Shared Daily Limits:**
 - 20 requests per day
 - 10,000 tokens per day
 - 300 tokens max per request input
 - 500 tokens max per request output
 
-💡 Your quota resets daily at midnight UTC.
+💡 Quota resets daily at midnight UTC.
 """
 
 

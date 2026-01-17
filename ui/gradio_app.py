@@ -78,8 +78,8 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
     # -------------------------------
     history_state, rag_uploaded_state = create_shared_states()
     
-    # Create Quota Section state
-    quota_display, user_session_state = create_quota_section()
+    # User session state (must be created early for event wiring)
+    user_session_state = gr.State(None)
     
     # -------------------------------
     # Layout
@@ -106,8 +106,12 @@ with gr.Blocks(title="Tech Explanation Service") as demo:
                 download_file,
             ) = create_buttons_section()
         
-        # Right Column - History Management
+        # Right Column - History Management & Quota
         with gr.Column(scale=1):
+            # Quota Status
+            quota_display, _ = create_quota_section()
+            
+            # History Section
             (
                 history_dropdown,
                 search_box,
