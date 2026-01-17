@@ -220,6 +220,12 @@ def explain_topic_with_quota_stream(
     delete_choices = history_formatter.create_delete_choices(history)
     info_msg = get_history_info_message(len(history))
     
+    logger.info(f"📋 Updating dropdowns:")
+    logger.info(f"   History length: {len(history)}")
+    logger.info(f"   Radio choices count: {len(radio_choices)}")
+    logger.info(f"   Delete choices count: {len(delete_choices)}")
+    logger.info(f"   Info message: {info_msg}")
+    
     # Update quota display
     updated_quota_display = update_quota_display(user_session)
     
