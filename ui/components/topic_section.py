@@ -33,7 +33,7 @@ def create_topic_section():
     
     output_box = gr.Textbox(
         label="💡 Explanation",
-        lines=18,
+        lines=15,
         interactive=False,
         autoscroll=True,
     )
