@@ -234,12 +234,13 @@ def explain_topic_with_quota_stream(
     logger.info(f"✅ Explanation completed successfully")
     logger.info(f"{'='*60}\n")
     
-    # Force Gradio to re-render dropdown by also updating value
+    # Return updated state and output, but DON'T update dropdowns here
+    # Dropdowns will be updated in the .then() step after streaming completes
     yield (
         history,
         final_output,
         updated_quota_display,
-        gr.update(choices=radio_choices, value=None, info=info_msg),
-        gr.update(choices=delete_choices)
+        gr.update(),  # Don't update history_dropdown yet
+        gr.update()   # Don't update delete_dropdown yet
     )
 
