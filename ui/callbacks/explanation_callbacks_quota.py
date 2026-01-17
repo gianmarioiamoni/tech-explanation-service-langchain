@@ -207,8 +207,10 @@ def explain_topic_with_quota_stream(
     
     # Update history
     if aggregate_mode:
-        history = history_repository.add_to_history(" | ".join(topics), final_output, history)
+        # Aggregate mode: save all topics in one entry, separated by comma
+        history = history_repository.add_to_history(", ".join(topics), final_output, history)
     else:
+        # Separate mode: save each topic as individual entry
         for t in topics:
             individual_output = badge + topic_contents[t]
             history = history_repository.add_to_history(t, individual_output, history)
