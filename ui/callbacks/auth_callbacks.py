@@ -1,50 +1,43 @@
 # ui/callbacks/auth_callbacks.py
 #
-# Callbacks for authentication and user session management.
-# Handles user login, session initialization, and quota display updates.
+# Callbacks for user session management and quota display.
+# No authentication required - shared demo mode with usage limits.
 #
 
 import gradio as gr
 import logging
 
-from app.auth import hf_auth_service, SessionManager
+from app.auth import SessionManager
 from app.services.quota import rate_limiter
 from ui.components.quota_section import format_quota_status
 
 logger = logging.getLogger(__name__)
 
 
-def initialize_user_session(request: gr.Request):
-    # Initialize user session on app load
-    # With Basic Auth, request.username is populated by Gradio
+def initialize_user_session(request: gr.Request = None):
+    # Initialize user session for shared demo mode
+    # All users share the same quota pool
     #
     # Args:
-    #     request: Gradio request object with user info
+    #     request: Gradio request object (not used in demo mode)
     #
     # Returns:
     #     Tuple of (user_session, quota_display_markdown)
     
     logger.info("\n" + "="*60)
-    logger.info("🔐 Initializing user session")
+    logger.info("🔐 Initializing shared demo session")
     
-    # With Basic Auth, Gradio populates request.username automatically
-    username = getattr(request, "username", None)
-    
-    if username:
-        # Basic Auth successful - use the authenticated username
-        user_id = f"basic_{username}"
-        logger.info(f"✅ Basic Auth user: {username} (ID: {user_id})")
-    else:
-        # Fallback to dev mode (local development without auth)
-        logger.info("⚠️ No authentication - using dev mode")
-        user_id = "dev_user"
-        username = "dev_user"
-    
-    # Create session
-    session = SessionManager.create_session(user_id, username)
-    
-    # Get quota status
     try:
+        # Shared demo user - all users share the same quota
+        user_id = "shared_demo"
+        username = "demo"
+        
+        logger.info(f"✅ Shared demo mode - user_id: {user_id}")
+        
+        # Create session
+        session = SessionManager.create_session(user_id, username, is_authenticated=False)
+        
+        # Get quota status
         quota_status = rate_limiter.get_quota_status(user_id)
         session.update_quota_status(quota_status)
         
@@ -58,14 +51,18 @@ def initialize_user_session(request: gr.Request):
             reset_at=quota_status.reset_at
         )
         
-        logger.info(f"✅ Session initialized for user: {username}")
+        logger.info(f"✅ Session initialized for shared demo")
         logger.info(f"   Quota: {quota_status.requests_remaining} requests, {quota_status.tokens_remaining} tokens remaining")
         logger.info("="*60 + "\n")
         
         return session, quota_display
         
     except Exception as e:
-        logger.error(f"❌ Error fetching quota status: {e}")
+        logger.error(f"❌ Error initializing session: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        # Return minimal safe values
+        session = SessionManager.create_session("error_user", "error_user", is_authenticated=False)
         return session, _get_quota_error_message()
 
 
@@ -79,15 +76,16 @@ def update_quota_display(user_session):
     #     Updated quota display markdown
     
     if not user_session:
-        return _get_auth_required_message()
-    
-    user_id = SessionManager.get_user_id_from_session(user_session)
+        user_id = "shared_demo"
+    else:
+        user_id = SessionManager.get_user_id_from_session(user_session)
     
     try:
         quota_status = rate_limiter.get_quota_status(user_id)
         
-        # Update session
-        user_session.update_quota_status(quota_status)
+        # Update session if available
+        if user_session:
+            user_session.update_quota_status(quota_status)
         
         return format_quota_status(
             requests_used=quota_status.requests_used,
@@ -102,23 +100,6 @@ def update_quota_display(user_session):
     except Exception as e:
         logger.error(f"❌ Error updating quota display: {e}")
         return _get_quota_error_message()
-
-
-def _get_auth_required_message() -> str:
-    # Get authentication required message
-    return """
-### 🔐 Authentication Required
-
-Please log in with your Hugging Face account to use this service.
-
-**Daily Quota Limits:**
-- 20 requests per day
-- 10,000 tokens per day
-- 300 tokens max per request input
-- 500 tokens max per request output
-
-💡 Your quota resets daily at midnight UTC.
-"""
 
 
 def _get_quota_error_message() -> str:

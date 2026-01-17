@@ -22,10 +22,9 @@ A **production-ready** AI service that generates clear, structured technical exp
 
 ---
 
-## 🔐 **Demo Access**
+## 🚀 **Live Demo**
 
-**Username:** `demo`  
-**Password:** `portfolio2026`
+👉 **[Try it now on Hugging Face Spaces](https://huggingface.co/spaces/gianmarioiamoni67/tech-explanation-service)**
 
 *Portfolio/demo project with shared quota limits (20 requests, 10,000 tokens/day)*
 
@@ -34,8 +33,8 @@ A **production-ready** AI service that generates clear, structured technical exp
 ## ✨ Key Features
 
 ### 🔐 **Smart Quota Management**
-- **Basic Authentication**: Simple username/password access
-- **Shared Daily Limits**: 20 requests and 10,000 tokens per day
+- **Shared Demo Mode**: No authentication required
+- **Shared Daily Limits**: 20 requests and 10,000 tokens per day (shared by all users)
 - **Real-Time Tracking**: Visual progress bars showing remaining quota (🟢🟡🔴)
 - **Auto-Validation**: Input truncation to max 300 tokens with user warnings
 - **Cost Control**: Token counting with tiktoken for accurate OpenAI billing
