@@ -22,13 +22,25 @@ def _refresh_dropdowns_after_stream(history):
     # Returns:
     #     Tuple of (history_dropdown_update, delete_dropdown_update)
     
+    import logging
     from app.services.history import HistoryFormatter
     from ui.utils.ui_messages import get_history_info_message
+    
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"\n{'='*60}")
+    logger.info(f"🔄 Refreshing dropdowns after streaming")
+    logger.info(f"   History length: {len(history) if history else 0}")
     
     formatter = HistoryFormatter()
     radio_choices, _ = formatter.create_history_choices(history)
     delete_choices = formatter.create_delete_choices(history)
     info_msg = get_history_info_message(len(history))
+    
+    logger.info(f"   Radio choices count: {len(radio_choices)}")
+    logger.info(f"   Delete choices count: {len(delete_choices)}")
+    logger.info(f"   Info message: {info_msg}")
+    logger.info(f"{'='*60}\n")
     
     return (
         gr.update(choices=radio_choices, value=None, info=info_msg),
