@@ -35,10 +35,14 @@ def initialize_user_session(request: gr.Request = None):
         logger.info(f"✅ Shared demo mode - user_id: {user_id}")
         
         # Create session
-        session = SessionManager.create_session(user_id, username, is_authenticated=False)
+        session = SessionManager.create_session(user_id, username)
+        logger.info(f"✅ Session created: {session}")
         
         # Get quota status
+        logger.info(f"📊 Fetching quota status for user_id: {user_id}")
         quota_status = rate_limiter.get_quota_status(user_id)
+        logger.info(f"✅ Quota status: {quota_status}")
+        
         session.update_quota_status(quota_status)
         
         quota_display = format_quota_status(
@@ -61,8 +65,9 @@ def initialize_user_session(request: gr.Request = None):
         logger.error(f"❌ Error initializing session: {e}")
         import traceback
         logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        logger.error("="*60 + "\n")
         # Return minimal safe values
-        session = SessionManager.create_session("error_user", "error_user", is_authenticated=False)
+        session = SessionManager.create_session("error_user", "error_user")
         return session, _get_quota_error_message()
 
 
