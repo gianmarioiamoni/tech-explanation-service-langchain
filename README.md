@@ -13,6 +13,9 @@ license: mit
 
 # 🤖 Tech Explanation Service
 
+<img width="1527" height="885" alt="01 - Homepage" src="https://github.com/user-attachments/assets/b07792fb-a13e-4aff-a97c-a164689a8412" />
+
+
 A **production-ready** AI service that generates clear, structured technical explanations using **LangChain LCEL**, **OpenAI GPT-4o-mini**, and **Conditional RAG** (Retrieval Augmented Generation).
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
