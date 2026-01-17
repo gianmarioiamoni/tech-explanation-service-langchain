@@ -163,7 +163,10 @@ def clear_all_chats():
     # Info message
     info_msg = get_history_info_message(len(empty_history))
     
-    print(f"✅ All chats cleared")
+    print(f"✅ All chats cleared - history count: {len(empty_history)}")
+    print(f"   Radio choices: {radio_choices}")
+    print(f"   Delete choices: {delete_choices}")
+    print(f"   Info message: {info_msg}")
     
     return (
         empty_history,
