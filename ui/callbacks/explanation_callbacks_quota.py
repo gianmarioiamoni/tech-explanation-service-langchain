@@ -62,7 +62,7 @@ def explain_topic_with_quota_stream(
     
     # Validate topics
     topics = output_formatter.parse_topics(topic_clean)
-    aggregate_mode = history_mode == "Aggrega in una sola chat"
+    aggregate_mode = history_mode == "Aggregate into one chat"
     
     # Show initial status
     streaming_badge = "⏳ **Generating explanation...**\n\n"
